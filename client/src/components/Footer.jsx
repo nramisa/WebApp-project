@@ -9,7 +9,7 @@ const Footer = () => {
           <Col md={6}>
             <h5>Contact Us</h5>
             <p className="mb-1">support@pitchin.ai</p>
-            <p>+1 (555) 123-4567</p>
+            <p>+880 1755401351</p>
           </Col>
           <Col md={6} className="text-md-end mt-4 mt-md-0">
             <div className="social-icons mb-3">
