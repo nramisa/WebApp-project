@@ -1,89 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Form, Button, Alert } from 'react-bootstrap';
+import { AuthContext } from './App';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const { setAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-    
     try {
-      // Add API call to your backend
-      const response = await fetch('/api/auth/' + (isLogin ? 'login' : 'register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      if (response.ok) {
-        navigate(isLogin ? '/dashboard' : '/profile-setup');
-      } else {
-        setError('Authentication failed');
-      }
+      // Replace with actual API call
+      const mockResponse = {
+        token: 'fake-jwt-token',
+        role: email.includes('admin') ? 'admin' : 
+              email.includes('investor') ? 'investor' : 'startup'
+      };
+
+      localStorage.setItem('auth', JSON.stringify(mockResponse));
+      setAuth(mockResponse);
+      navigate(mockResponse.role === 'investor' ? '/investor' : '/dashboard');
     } catch (err) {
-      setError('Server error. Please try again.');
+      setError('Authentication failed');
     }
   };
 
   return (
-    <div className="auth-page" style={{ minHeight: '100vh', background: 'var(--light-bg)' }}>
-      <Container className="py-5">
-        <div className="auth-card shadow-lg p-4 bg-white rounded-3" style={{ maxWidth: '500px', margin: '0 auto' }}>
-          <h2 className="text-center mb-4">{isLogin ? 'Login' : 'Register'}</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
-          
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </Form.Group>
+    <div className="auth-page">
+      <h2>{isLogin ? 'Login' : 'Register'}</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+      
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Email</Form.Label>
+          <Form.Control
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </Form.Group>
 
-            <Form.Group className="mb-4">
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </Form.Group>
+        <Form.Group className="mb-4">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Form.Group>
 
-            <Button 
-              variant="danger" 
-              type="submit" 
-              className="w-100 py-2 mb-3"
-            >
-              {isLogin ? 'Login' : 'Register'}
-            </Button>
+        <Button variant="primary" type="submit" className="w-100">
+          {isLogin ? 'Login' : 'Register'}
+        </Button>
 
-            <div className="text-center">
-              <Button 
-                variant="link" 
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-decoration-none"
-              >
-                {isLogin ? 'Create new account' : 'Already have an account?'}
-              </Button>
-            </div>
-          </Form>
-        </div>
-      </Container>
+        <Button 
+          variant="link" 
+          onClick={() => setIsLogin(!isLogin)}
+          className="mt-2"
+        >
+          {isLogin ? 'Create account' : 'Existing user? Login'}
+        </Button>
+      </Form>
     </div>
   );
 };
+
+localStorage.setItem('auth', JSON.stringify({
+    token: 'your-jwt-token',
+    role: 'startup',
+    userData: {  // Add this
+      name: 'John Doe', 
+      email: 'john@example.com'
+    }
+  }));
 
 export default Login;
