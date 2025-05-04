@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Card, Form, Button } from 'react-bootstrap';
+import { AuthContext } from './App';
 
 const Upload = ({ onUpload, loading }) => {
   const [file, setFile] = React.useState(null);
+  const { auth } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -24,7 +26,7 @@ const Upload = ({ onUpload, loading }) => {
           <Button 
             variant="danger" 
             onClick={() => onUpload(file)}
-            disabled={loading}
+            disabled={!file || loading || !auth.token}
             className="w-100 py-3"
           >
             {loading ? 'Analyzing...' : 'Upload File'}
