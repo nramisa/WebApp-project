@@ -1,72 +1,115 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Navbar, Nav, Container } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { Navbar, Nav, Container, Button, Spinner } from 'react-bootstrap';
 import Upload from './components/Upload';
 import Analysis from './components/Analysis';
-import InvestorQA from './components/InvestorQA';
-import MarketValidation from './components/MarketValidation';
+import Login from './components/Login';
 import Home from './components/Home';
 import Footer from './components/Footer';
-import axios from 'axios';
-import './styles/base.css';
+import AdminPanel from './components/AdminPanel';
+import InvestorDashboard from './components/InvestorDashboard';
+import StartupDashboard from './components/StartupDashboard';
 
-function App() {
-  const [analysis, setAnalysis] = useState(null);
+// Simple Auth Context
+const AuthContext = React.createContext();
+
+const App = () => {
+  const [auth, setAuth] = useState(() => {
+    const savedAuth = localStorage.getItem('auth');
+    return savedAuth ? JSON.parse(savedAuth) : { token: null, role: null };
+  });
+
+  const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const ProtectedRoute = ({ children, requiredRole }) => {
+    if (!auth.token) return <Navigate to="/login" replace />;
+    if (requiredRole && auth.role !== requiredRole) return <Navigate to="/" replace />;
+    return children;
+  };
+
   const handleUpload = async (file) => {
-    if (!file) return;
-    
     setLoading(true);
     const formData = new FormData();
-    formData.append('pitchFile', file);
+    formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/analyze', formData);
-      setAnalysis(response.data);
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${auth.token}` },
+        body: formData
+      });
+      setAnalysisData(await response.json());
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Analysis failed');
+      alert('Upload failed');
     }
     setLoading(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('auth');
+    setAuth({ token: null, role: null });
+  };
+
   return (
-    <Router>
-      <Navbar bg="white" expand="lg" className="shadow-sm" variant="light">
-        <Container>
-          <Navbar.Brand as={Link} to="/" className="text-danger fw-bold">
-            PitchIn
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto">
-              <Nav.Link as={Link} to="/" className="mx-2">Home</Nav.Link>
-              <Nav.Link as={Link} to="/analyze" className="mx-2">Analyze</Nav.Link>
-              <Nav.Link as={Link} to="/qa" className="mx-2">Q&A</Nav.Link>
-              <Nav.Link as={Link} to="/market" className="mx-2">Market</Nav.Link>
-            </Nav>
-          </Navbar.Collapse>
+    <AuthContext.Provider value={{ auth, setAuth }}>
+      <Router>
+        <Navbar bg="light" expand="lg">
+          <Container>
+            <Navbar.Brand as={Link} to="/">PitchIn</Navbar.Brand>
+            <Navbar.Toggle aria-controls="basic-navbar-nav" />
+            <Navbar.Collapse id="basic-navbar-nav">
+              <Nav className="ms-auto">
+                {auth.token ? (
+                  <>
+                    {auth.role === 'admin' && <Nav.Link as={Link} to="/admin">Admin</Nav.Link>}
+                    {auth.role === 'startup' && <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>}
+                    {auth.role === 'investor' && <Nav.Link as={Link} to="/investor">Investor</Nav.Link>}
+                    <Button variant="danger" onClick={handleLogout}>Logout</Button>
+                  </>
+                ) : (
+                  <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                )}
+              </Nav>
+            </Navbar.Collapse>
+          </Container>
+        </Navbar>
+
+        <Container className="mt-4">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login setAuth={setAuth} />} />
+            
+            <Route path="/analyze" element={
+              <ProtectedRoute requiredRole="startup">
+                <Upload onUpload={handleUpload} loading={loading} />
+                {analysisData && <Analysis data={analysisData} />}
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/dashboard" element={
+              <ProtectedRoute requiredRole="startup">
+                <StartupDashboard />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/investor" element={
+              <ProtectedRoute requiredRole="investor">
+                <InvestorDashboard />
+              </ProtectedRoute>
+            }/>
+
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminPanel />
+              </ProtectedRoute>
+            }/>
+          </Routes>
         </Container>
-      </Navbar>
-
-      <Container className="mt-4 py-4">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/analyze" element={
-            <>
-              <Upload onUpload={handleUpload} loading={loading} />
-              {analysis && <Analysis data={analysis} />}
-            </>
-          } />
-          <Route path="/qa" element={<InvestorQA />} />
-          <Route path="/market" element={<MarketValidation />} />
-        </Routes>
-      </Container>
-
-      <Footer />
-    </Router>
+        <Footer />
+      </Router>
+    </AuthContext.Provider>
   );
-}
+};
 
 export default App;
