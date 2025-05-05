@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Card, Form, Button } from 'react-bootstrap';
-import { AuthContext } from './App';
+import { AuthContext } from '../context/AuthContext';
 
 const Upload = ({ onUpload, loading }) => {
   const [file, setFile] = React.useState(null);
