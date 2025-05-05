@@ -2,12 +2,14 @@ import React from 'react';
 import styles from '../styles/Analysis.module.css';
 
 const Analysis = ({ data }) => {
+  if (!data) return null;
+
   return (
     <div className={styles.resultsCard}>
       <div className={styles.resultsHeader}>
-        <h2>Analysis Results</h2>
+        <h2>AI Analysis Results</h2>
         <div className={styles.confidenceMeter}>
-          <span className={styles.score}>82%</span>
+          <span className={styles.score}>{data.overallScore}%</span>
           <p>Overall Readiness Score</p>
         </div>
       </div>
@@ -15,15 +17,22 @@ const Analysis = ({ data }) => {
       <div className={styles.analysisResults}>
         <section>
           <h3>Structure Analysis</h3>
-          <p>Your deck needs stronger financial projections...</p>
+          <p>{data.structureSummary}</p>
         </section>
+        
         <section>
-          <h3>Market Fit</h3>
-          <p>Clear problem identification but needs more competitor analysis...</p>
+          <h3>Market Fit ({data.marketFitScore}/100)</h3>
+          <p>{data.marketFitScore >= 70 ? '✅ Strong' : '⚠️ Needs Improvement'}</p>
         </section>
+
         <section>
-          <h3>Investor Readiness</h3>
-          <p>Strong team section but missing exit strategy...</p>
+          <h3>Investor Readiness ({data.investorReadinessScore}/100)</h3>
+          <p>{data.investorReadinessScore >= 80 ? '🎯 Investor Ready' : '📈 Needs Refinement'}</p>
+        </section>
+
+        <section>
+          <h3>Financial Health</h3>
+          <p>{data.financialHealth}</p>
         </section>
       </div>
     </div>
