@@ -1,54 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 import styles from '../styles/Analysis.module.css';
 
 const InvestorQA = () => {
-  const [investorType, setInvestorType] = useState('vc');
-  const [fundingStage, setFundingStage] = useState('seed');
-  const [questions, setQuestions] = useState([]);
+  const [industry, setIndustry] = useState('tech');
+  const [stage, setStage] = useState('seed');
+  const [qaPairs, setQAPairs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { auth } = useContext(AuthContext);
 
   const generateQuestions = async () => {
-    const mockQuestions = [
-      "What's your customer acquisition cost?",
-      "How does your solution differ from existing options?",
-      "What's your 5-year growth projection?",
-    ];
-    setQuestions(mockQuestions);
+    setIsLoading(true);
+    try {
+      const response = await axios.post('/api/generate-questions', 
+        { industry, stage },
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+      setQAPairs(response.data);
+    } catch (error) {
+      alert('Failed to generate questions');
+    }
+    setIsLoading(false);
   };
 
   return (
     <div className={styles.uploadCard}>
-      <h2>Investor Q&A Simulator</h2>
+      <h2>Investor Q&A Generator</h2>
       <div className={styles.uploadZone}>
-        <select 
-          value={investorType}
-          onChange={(e) => setInvestorType(e.target.value)}
+        <select
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+          className={styles.formSelect}
         >
-          <option value="vc">Venture Capital</option>
-          <option value="angel">Angel Investor</option>
-          <option value="corporate">Corporate VC</option>
+          <option value="tech">Technology</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="fintech">Fintech</option>
         </select>
 
-        <div className="stage-selector">
-          {['pre-seed', 'seed', 'series-a'].map(stage => (
+        <div className={styles.stageSelector}>
+          {['pre-seed', 'seed', 'series-a'].map((s) => (
             <button
-              key={stage}
-              className={fundingStage === stage ? styles.activeStage : ''}
-              onClick={() => setFundingStage(stage)}
+              key={s}
+              className={`${styles.stageButton} ${stage === s ? styles.activeStage : ''}`}
+              onClick={() => setStage(s)}
             >
-              {stage.toUpperCase()}
+              {s.toUpperCase()}
             </button>
           ))}
         </div>
 
-        <button className={styles.browseBtn} onClick={generateQuestions}>
-          Generate Questions
+        <button 
+          className={styles.browseBtn} 
+          onClick={generateQuestions}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Generating...' : 'Generate Q&A'}
         </button>
 
-        <div className="questions-section">
-          {questions.map((q, i) => (
-            <div key={i} className="question-card">
-              <p>{q}</p>
-              <button className="practice-btn">Practice Answer</button>
+        <div className={styles.qaSection}>
+          {qaPairs.map((pair, index) => (
+            <div key={index} className={styles.qaCard}>
+              <h4>Question {index + 1}</h4>
+              <p className={styles.question}>{pair.question}</p>
+              <div className={styles.answer}>
+                <strong>Suggested Answer:</strong>
+                <p>{pair.suggestedAnswer}</p>
+              </div>
             </div>
           ))}
         </div>
