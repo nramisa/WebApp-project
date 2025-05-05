@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Navbar, Nav, Container, Button, Spinner } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { 
+  BrowserRouter as Router, 
+  Routes, 
+  Route, 
+  Navigate,
+  Link 
+} from 'react-router-dom';
+import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import Upload from './components/Upload';
 import Analysis from './components/Analysis';
-import Login from './components/Login';
+import Login from './components/Auth/Login';
 import Home from './components/Home';
 import Footer from './components/Footer';
-import AdminPanel from './components/AdminPanel';
-import InvestorDashboard from './components/InvestorDashboard';
-import StartupDashboard from './components/StartupDashboard';
+import AdminPanel from './components/Admin/AdminPanel';
+import InvestorDashboard from './components/Dashboard/InvestorDashboard';
+import StartupDashboard from './components/Dashboard/StartupDashboard';
 
-// Simple Auth Context
 const AuthContext = React.createContext();
 
 const App = () => {
@@ -32,16 +37,23 @@ const App = () => {
     setLoading(true);
     const formData = new FormData();
     formData.append('file', file);
-
+  
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${auth.token}` },
+        headers: { 
+          'Authorization': `Bearer ${auth.token}`,
+        },
         body: formData
       });
-      setAnalysisData(await response.json());
+      
+      if (!response.ok) throw new Error('Analysis failed');
+      
+      const data = await response.json();
+      setAnalysisData(data);
     } catch (error) {
-      alert('Upload failed');
+      alert(error.message || 'Upload failed');
+      setAnalysisData(null);
     }
     setLoading(false);
   };
