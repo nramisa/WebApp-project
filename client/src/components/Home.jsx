@@ -1,10 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; //Import routing
 import { Button, Container, Row, Col, Card } from 'react-bootstrap';
 import '../styles/home.css';
 
 const Home = () => {
-  const testimonials = [
+  const testimonials = [ /* Array of testimonial objects */
     {
       name: "Sarah Johnson",
       role: "Founder, HealthTech Innovations",
@@ -22,7 +22,7 @@ const Home = () => {
     }
   ];
 
-  const features = [
+  const features = [ /* Array of feature objects */
     {
       title: "AI-Powered Analysis",
       icon: "🤖",
@@ -41,16 +41,18 @@ const Home = () => {
   ];
 
   return (
-    <div className="home-page">
+    <div className="home-page"> {/* Main container */}
+
+    {/* Hero section */}
       <div 
         className="text-white hero"
         style={{ 
           background: 'linear-gradient(45deg, #1A1A1A 0%, #DC143C 100%)',
         }}
       >
-        <Container className="py-5 text-center">
-          <h1 className="display-4 mb-4 fw-bold">Transform Your Startup Journey</h1>
-          <p className="lead mb-4 fs-4">AI-powered pitch validation, investor readiness training, and market testing</p>
+        <Container className="py-5 text-center"> {/*py-5 is padding on y axis, it adds vertical space */}
+          <h1 className="display-4 mb-4 fw-bold">Transform Your Startup Journey</h1> {/*display-4 is to display large heading mb-4 is margin bottom of size 4 which adds space below heading fw-bold is font weight set to bold */}
+          <p className="lead mb-4 fs-4">AI-powered pitch validation, investor readiness training, and market testing</p> {/*lead makes text larger (used for subheadings) */}
           <Button 
             as={Link} 
             to="/analyze" 
