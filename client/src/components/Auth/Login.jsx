@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { AuthContext } from './App';
 
@@ -18,7 +18,11 @@ const Login = () => {
       const mockResponse = {
         token: 'fake-jwt-token',
         role: email.includes('admin') ? 'admin' : 
-              email.includes('investor') ? 'investor' : 'startup'
+              email.includes('investor') ? 'investor' : 'startup',
+        userData: {
+          name: 'John Doe', 
+          email: email
+        }
       };
 
       localStorage.setItem('auth', JSON.stringify(mockResponse));
@@ -70,14 +74,5 @@ const Login = () => {
     </div>
   );
 };
-
-localStorage.setItem('auth', JSON.stringify({
-    token: 'your-jwt-token',
-    role: 'startup',
-    userData: {  // Add this
-      name: 'John Doe', 
-      email: 'john@example.com'
-    }
-  }));
 
 export default Login;
