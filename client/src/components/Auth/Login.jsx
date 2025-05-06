@@ -1,43 +1,29 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
-import App from '../../App';
+import { AuthContext } from '../../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
-  const { setAuth } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // Replace with actual API call
-      const mockResponse = {
-        token: 'fake-jwt-token',
-        role: email.includes('admin') ? 'admin' : 
-              email.includes('investor') ? 'investor' : 'startup',
-        userData: {
-          name: 'John Doe', 
-          email: email
-        }
-      };
-
-      localStorage.setItem('auth', JSON.stringify(mockResponse));
-      setAuth(mockResponse);
-      navigate(mockResponse.role === 'investor' ? '/investor' : '/dashboard');
-    } catch (err) {
+    const success = await login(email);
+    if (success) {
+      navigate(email.includes('investor') ? '/investor' : '/dashboard');
+    } else {
       setError('Authentication failed');
     }
   };
 
   return (
     <div className="auth-page">
-      <h2>{isLogin ? 'Login' : 'Register'}</h2>
+      <h2>Login</h2>
       {error && <Alert variant="danger">{error}</Alert>}
-      
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
           <Form.Label>Email</Form.Label>
@@ -60,15 +46,7 @@ const Login = () => {
         </Form.Group>
 
         <Button variant="primary" type="submit" className="w-100">
-          {isLogin ? 'Login' : 'Register'}
-        </Button>
-
-        <Button 
-          variant="link" 
-          onClick={() => setIsLogin(!isLogin)}
-          className="mt-2"
-        >
-          {isLogin ? 'Create account' : 'Existing user? Login'}
+          Login
         </Button>
       </Form>
     </div>
