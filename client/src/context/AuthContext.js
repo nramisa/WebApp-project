@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
@@ -9,9 +9,17 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : { token: null, role: null };
   });
 
+  // Configure axios base URL
+  const api = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/login', { email, password });
+      const response = await api.post('/api/login', { email, password });
       
       const authData = {
         token: response.data.token,
@@ -30,7 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password, role) => {
     try {
-      const response = await axios.post('/api/signup', { email, password, role });
+      const response = await api.post('/api/signup', { email, password, role });
       
       const authData = {
         token: response.data.token,
@@ -50,6 +58,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('auth');
     setAuth({ token: null, role: null });
+    window.location.href = '/login';
   };
 
   return (
