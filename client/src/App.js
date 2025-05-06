@@ -1,16 +1,16 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Navbar, Nav, Container, Button } from 'react-bootstrap';
+import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { AuthContext } from './context/AuthContext';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
-import StartupDashboard from './components/Dashboard/StartupDashboard';
-import InvestorDashboard from './components/Dashboard/InvestorDashboard';
+import Profile from './components/Profile';
 import Analysis from './components/Analysis';
 import InvestorQA from './components/InvestorQA';
 import MarketValidation from './components/MarketValidation';
 import Upload from './components/Upload';
+import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 import './styles/base.css';
 
@@ -31,26 +31,44 @@ const App = () => {
             <img src="/logo.png" alt="PitchIn" style={{ height: '40px' }} />
             PitchIn
           </Navbar.Brand>
+          
           <Navbar.Toggle aria-controls="main-nav" />
+          
           <Navbar.Collapse id="main-nav">
             <Nav className="me-auto">
               {auth.token && auth.role === 'startup' && (
                 <>
-                  <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
+                  <Nav.Link as={Link} to="/">Home</Nav.Link>
                   <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
                   <Nav.Link as={Link} to="/investor-qa">Q&A Simulator</Nav.Link>
                   <Nav.Link as={Link} to="/market-validation">Market Validation</Nav.Link>
                 </>
               )}
-              {auth.token && auth.role === 'investor' && (
-                <Nav.Link as={Link} to="/investor-dashboard">Pitch Board</Nav.Link>
+              {auth.token && auth.role === 'admin' && (
+                <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>
               )}
             </Nav>
+            
             <Nav>
               {auth.token ? (
-                <Button variant="danger" onClick={logout}>
-                  Logout
-                </Button>
+                <Dropdown align="end">
+                  <Dropdown.Toggle variant="light" id="profile-dropdown">
+                    <i className="bi bi-person-circle me-2"></i>
+                    {auth.userData?.name || 'Profile'}
+                  </Dropdown.Toggle>
+                  
+                  <Dropdown.Menu>
+                    <Dropdown.Item as={Link} to="/profile">
+                      <i className="bi bi-person me-2"></i>
+                      My Profile
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item onClick={logout}>
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Logout
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
               ) : (
                 <>
                   <Nav.Link as={Link} to="/login">Login</Nav.Link>
@@ -68,13 +86,13 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-
-            {/* Startup Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute requiredRole="startup">
-                <StartupDashboard />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }/>
+
+            {/* Startup Routes */}
             <Route path="/analyze" element={
               <ProtectedRoute requiredRole="startup">
                 <Upload />
@@ -92,10 +110,10 @@ const App = () => {
               </ProtectedRoute>
             }/>
 
-            {/* Investor Routes */}
-            <Route path="/investor-dashboard" element={
-              <ProtectedRoute requiredRole="investor">
-                <InvestorDashboard />
+            {/* Admin Route */}
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminPanel />
               </ProtectedRoute>
             }/>
           </Routes>
