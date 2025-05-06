@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
 const Login = () => {
@@ -12,12 +12,9 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(email);
-    if (success) {
-      navigate(email.includes('investor') ? '/investor' : '/dashboard');
-    } else {
-      setError('Authentication failed');
-    }
+    const success = await login(email, password);
+    if (success) navigate(auth.role === 'investor' ? '/investor-dashboard' : '/dashboard');
+    else setError('Invalid credentials');
   };
 
   return (
@@ -45,9 +42,12 @@ const Login = () => {
           />
         </Form.Group>
 
-        <Button variant="primary" type="submit" className="w-100">
+        <Button variant="danger" type="submit" className="w-100 mb-3">
           Login
         </Button>
+        <div className="text-center">
+          Don't have an account? <Link to="/signup">Sign Up</Link>
+        </div>
       </Form>
     </div>
   );
