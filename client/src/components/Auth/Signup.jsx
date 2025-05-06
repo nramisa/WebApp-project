@@ -7,14 +7,15 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('startup');
+  const [adminSecret, setAdminSecret] = useState('');
   const [error, setError] = useState('');
   const { signup } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await signup(email, password, role);
-    if (success) navigate(role === 'investor' ? '/investor-dashboard' : '/dashboard');
+    const success = await signup(email, password, role, adminSecret);
+    if (success) navigate(role === 'admin' ? '/admin' : '/');
     else setError('Registration failed');
   };
 
@@ -34,14 +35,26 @@ const Signup = () => {
               Startup
             </Button>
             <Button
-              variant={role === 'investor' ? 'danger' : 'outline-secondary'}
-              onClick={() => setRole('investor')}
+              variant={role === 'admin' ? 'danger' : 'outline-secondary'}
+              onClick={() => setRole('admin')}
               className="flex-grow-1"
             >
-              Investor
+              Admin
             </Button>
           </div>
         </Form.Group>
+
+        {role === 'admin' && (
+          <Form.Group className="mb-3">
+            <Form.Label>Admin Secret Key</Form.Label>
+            <Form.Control
+              type="password"
+              value={adminSecret}
+              onChange={(e) => setAdminSecret(e.target.value)}
+              required
+            />
+          </Form.Group>
+        )}
 
         <Form.Group className="mb-3">
           <Form.Label>Email</Form.Label>
