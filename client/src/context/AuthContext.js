@@ -9,11 +9,11 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : { token: null, role: null };
   });
 
-  // Configure axios base URL
   const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: auth.token ? `Bearer ${auth.token}` : ''
     }
   });
 
@@ -36,9 +36,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (email, password, role) => {
+  const signup = async (email, password, role, adminSecret) => {
     try {
-      const response = await api.post('/api/signup', { email, password, role });
+      const response = await api.post('/api/signup', { 
+        email, 
+        password, 
+        role,
+        adminSecret 
+      });
       
       const authData = {
         token: response.data.token,
@@ -62,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, signup, logout }}>
+    <AuthContext.Provider value={{ auth, login, signup, logout, api }}>
       {children}
     </AuthContext.Provider>
   );
