@@ -1,15 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const multer = require('multer');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const authMiddleware = require('./utils/authMiddleware');
-const parsePDF = require('./utils/pdfParser');
-const Analysis = require('./models/Analysis');
+const User = require('./models/User');
 
 const app = express();
-
-// Middleware
 app.use(express.json());
 app.use(cors());
 
@@ -19,76 +16,65 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true
 });
 
-// Connection Events
-mongoose.connection.on('connected', () => {
-  console.log(`Connected to MongoDB: ${mongoose.connection.db.databaseName}`);
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
-});
-
-// Auth Routes
-app.post('/api/login', (req, res) => {
-  // Demo authentication (replace with real implementation)
-  const role = req.body.email.includes('admin') ? 'admin' :
-               req.body.email.includes('investor') ? 'investor' : 'startup';
-  
-  // Mock JWT token (replace with real JWT implementation)
-  const token = jwt.sign(
-    { email: req.body.email, role }, 
-    process.env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-
-  res.json({
-    token,
-    role,
-    userData: {
-      name: 'Demo User',
-      email: req.body.email
-    }
-  });
-});
-
-// Analysis Endpoint
-app.post('/api/analyze', authMiddleware, async (req, res) => {
+// Auth Endpoints
+app.post('/api/login', async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-    const pdfData = await parsePDF(req.file.buffer);
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
     
-    const analysis = new Analysis({
-      user: req.user.id,
-      filename: req.file.originalname,
-      content: pdfData.text,
-      feedback: {
-        score: Math.floor(Math.random() * 40) + 60,
-        summary: "Sample analysis:\n- Strong market potential\n- Needs financial clarity\n- Good team structure"
-      }
-    });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    await analysis.save();
-    
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
     res.json({
-      score: analysis.feedback.score,
-      feedback: analysis.feedback.summary,
-      filename: analysis.filename
+      token,
+      role: user.role,
+      userData: { name: user.profile.name, email: user.email }
     });
-
   } catch (err) {
-    console.error('Analysis error:', err);
-    res.status(500).json({ error: 'Analysis failed' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Server Start
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`MongoDB host: ${mongoose.connection.host}`);
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+    
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      role,
+      profile: { name: email.split('@')[0] }
+    });
+
+    await newUser.save();
+
+    const token = jwt.sign(
+      { userId: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(201).json({
+      token,
+      role: newUser.role,
+      userData: { name: newUser.profile.name, email: newUser.email }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
