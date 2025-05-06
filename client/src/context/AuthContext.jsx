@@ -1,12 +1,14 @@
-import { createContext, useState } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState(() => {
-    const saved = localStorage.getItem('auth');
-    return saved ? JSON.parse(saved) : { token: null, role: null };
+  const [auth, setAuth] = useState({ 
+    token: null,
+    role: null,
+    userData: null,
+    initialized: false
   });
 
   const api = axios.create({
@@ -17,16 +19,37 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const saved = localStorage.getItem('auth');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Verify token validity if needed
+          setAuth({
+            ...parsed,
+            initialized: true
+          });
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+          localStorage.removeItem('auth');
+        }
+      }
+      setAuth(prev => ({ ...prev, initialized: true }));
+    };
+
+    initializeAuth();
+  }, []);
+
   const login = async (email, password) => {
     try {
       const response = await api.post('/api/login', { email, password });
-      
       const authData = {
         token: response.data.token,
         role: response.data.role,
-        userData: response.data.userData
+        userData: response.data.userData,
+        initialized: true
       };
-      
       localStorage.setItem('auth', JSON.stringify(authData));
       setAuth(authData);
       return true;
@@ -44,13 +67,12 @@ export const AuthProvider = ({ children }) => {
         role,
         adminSecret 
       });
-      
       const authData = {
         token: response.data.token,
         role: response.data.role,
-        userData: response.data.userData
+        userData: response.data.userData,
+        initialized: true
       };
-      
       localStorage.setItem('auth', JSON.stringify(authData));
       setAuth(authData);
       return true;
@@ -62,14 +84,24 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('auth');
-    setAuth({ token: null, role: null });
+    setAuth({
+      token: null,
+      role: null,
+      userData: null,
+      initialized: true
+    });
     window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, signup, logout, api }}>
+    <AuthContext.Provider value={{ 
+      auth,
+      login,
+      signup,
+      logout,
+      api
+    }}>
       {children}
     </AuthContext.Provider>
   );
 };
-export { AuthContext, AuthProvider };
