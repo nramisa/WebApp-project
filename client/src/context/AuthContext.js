@@ -4,22 +4,27 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(() => {
-    const storedAuth = localStorage.getItem('auth');
-    return storedAuth 
-      ? JSON.parse(storedAuth) 
-      : { token: null, user: null, role: null };
+    const saved = localStorage.getItem('auth');
+    return saved ? JSON.parse(saved) : { token: null, role: null };
   });
 
-  useEffect(() => {
-    if (auth.token) {
-      localStorage.setItem('auth', JSON.stringify(auth));
-    } else {
-      localStorage.removeItem('auth');
+  const login = async (email, password) => {
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      localStorage.setItem('auth', JSON.stringify(data));
+      setAuth(data);
+    } catch (err) {
+      console.error(err);
     }
-  }, [auth]);
+  };
 
   return (
-    <AuthContext.Provider value={{ auth, setAuth }}>
+    <AuthContext.Provider value={{ auth, login }}>
       {children}
     </AuthContext.Provider>
   );
