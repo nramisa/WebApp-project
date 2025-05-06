@@ -1,19 +1,19 @@
 import React, { useState, useContext } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext.jsx';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const { login, auth } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await login(email, password);
-    if (success) navigate(auth.role === 'investor' ? '/investor-dashboard' : '/dashboard');
+    if (success) navigate(auth.role === 'admin' ? '/admin' : '/dashboard');
     else setError('Invalid credentials');
   };
 
