@@ -1,16 +1,15 @@
 {
-  "name": "prototype",
-  "version": "0.1.0",
+  "name": "pitchin",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@mui/icons-material": "^7.0.2",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.3",
-    "react": "^19.0.0",
-    "react-bootstrap": "^2.10.9",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.5.3",
-    "react-scripts": "^5.0.1",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.10.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.23.1",
+    "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -20,7 +19,24 @@
     "eject": "react-scripts eject"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "not ie > 0",
+      "not samsung > 0",
+      "not and_uc > 0"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   }
 }
