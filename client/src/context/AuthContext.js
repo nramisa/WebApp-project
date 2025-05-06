@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 export const AuthContext = createContext();
 
@@ -8,26 +9,51 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : { token: null, role: null };
   });
 
-  const login = async (email) => {
+  const login = async (email, password) => {
     try {
-      const role = email.includes('admin') ? 'admin' :
-                   email.includes('investor') ? 'investor' : 'startup';
-      const mockResponse = {
-        token: 'demo-token',
-        role,
-        userData: { name: 'Demo User', email }
+      const response = await axios.post('/api/login', { email, password });
+      
+      const authData = {
+        token: response.data.token,
+        role: response.data.role,
+        userData: response.data.userData
       };
-      localStorage.setItem('auth', JSON.stringify(mockResponse));
-      setAuth(mockResponse);
+      
+      localStorage.setItem('auth', JSON.stringify(authData));
+      setAuth(authData);
       return true;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error('Login failed:', error.response?.data?.error || error.message);
       return false;
     }
   };
 
+  const signup = async (email, password, role) => {
+    try {
+      const response = await axios.post('/api/signup', { email, password, role });
+      
+      const authData = {
+        token: response.data.token,
+        role: response.data.role,
+        userData: response.data.userData
+      };
+      
+      localStorage.setItem('auth', JSON.stringify(authData));
+      setAuth(authData);
+      return true;
+    } catch (error) {
+      console.error('Signup failed:', error.response?.data?.error || error.message);
+      return false;
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('auth');
+    setAuth({ token: null, role: null });
+  };
+
   return (
-    <AuthContext.Provider value={{ auth, login }}>
+    <AuthContext.Provider value={{ auth, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
