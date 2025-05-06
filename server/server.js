@@ -18,7 +18,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Database Connection with modern options
+// Database Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -60,17 +60,24 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/signup', async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, adminSecret } = req.body;
     
     if (await User.findOne({ email })) {
       return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Admin validation
+    if (role === 'admin') {
+      if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ error: 'Invalid admin secret' });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       email,
       password: hashedPassword,
-      role,
+      role: role || 'startup',
       profile: { name: email.split('@')[0] }
     });
 
@@ -93,6 +100,16 @@ app.post('/api/signup', async (req, res) => {
     });
   } catch (err) {
     console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Admin Endpoint
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
