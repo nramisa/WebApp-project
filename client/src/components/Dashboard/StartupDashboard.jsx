@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Container, Row, Col, Card, ListGroup, Badge, Button } from 'react-bootstrap';
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext.jsx';
 import { Link } from 'react-router-dom';
 
 const StartupDashboard = () => {
