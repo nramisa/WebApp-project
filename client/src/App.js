@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
-import { AuthContext } from './context/AuthContext';
+import { AuthContext, AuthProvider } from './context/AuthContext.jsx';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
@@ -14,7 +14,7 @@ import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 import './styles/base.css';
 
-const App = () => {
+const AppContent = () => {
   const { auth, logout } = useContext(AuthContext);
 
   const ProtectedRoute = ({ children, requiredRole }) => {
@@ -124,5 +124,11 @@ const App = () => {
     </Router>
   );
 };
+
+const App = () => (
+  <AuthProvider>
+    <AppContent />
+  </AuthProvider>
+);
 
 export default App;
