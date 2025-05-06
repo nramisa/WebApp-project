@@ -1,20 +1,21 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
-import { AuthContext, AuthProvider } from './context/AuthContext';
-import Upload from './components/Upload';
-import Analysis from './components/Analysis';
-import Login from './components/Auth/Login';
+import { AuthContext } from './context/AuthContext';
 import Home from './components/Home';
 import Footer from './components/Footer';
-import AdminPanel from './components/Admin/AdminPanel';
-import InvestorDashboard from './components/Dashboard/InvestorDashboard';
+import Login from './components/Auth/Login';
+import Signup from './components/Auth/Signup';
 import StartupDashboard from './components/Dashboard/StartupDashboard';
+import InvestorDashboard from './components/Dashboard/InvestorDashboard';
+import Analysis from './components/Analysis';
+import InvestorQA from './components/InvestorQA';
+import MarketValidation from './components/MarketValidation';
+import Upload from './components/Upload';
+import './styles/base.css';
 
 const App = () => {
   const { auth } = useContext(AuthContext);
-  const [analysisData, setAnalysisData] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
 
   const ProtectedRoute = ({ children, requiredRole }) => {
     if (!auth.token) return <Navigate to="/login" replace />;
@@ -22,88 +23,99 @@ const App = () => {
     return children;
   };
 
-  const handleUpload = async (file) => {
-    setLoading(true);
-    try {
-      const mockAnalysis = {
-        score: Math.floor(Math.random() * 40) + 60,
-        feedback: {
-          structure: "Good structure overall",
-          marketFit: "Strong market potential",
-          financials: "Needs clearer projections"
-        }
-      };
-      setAnalysisData(mockAnalysis);
-    } catch (error) {
-      alert('Upload failed');
-    }
-    setLoading(false);
-  };
-
   return (
     <Router>
-      <Navbar bg="light" expand="lg">
+      <Navbar bg="light" expand="lg" fixed="top">
         <Container>
-          <Navbar.Brand as={Link} to="/">PitchIn</Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ms-auto">
-              {auth.token ? (
+          <Navbar.Brand as={Link} to="/" className="logo">
+            <img 
+              src="/logo.png" 
+              alt="PitchIn" 
+              style={{ height: '40px', marginRight: '10px' }}
+            />
+            PitchIn
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="main-nav" />
+          <Navbar.Collapse id="main-nav">
+            <Nav className="me-auto">
+              {auth.token && auth.role === 'startup' && (
                 <>
-                  {auth.role === 'admin' && <Nav.Link as={Link} to="/admin">Admin</Nav.Link>}
-                  {auth.role === 'startup' && <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>}
-                  {auth.role === 'investor' && <Nav.Link as={Link} to="/investor">Investor</Nav.Link>}
-                  <Button variant="danger" onClick={() => {
-                    localStorage.removeItem('auth');
-                    window.location.reload();
-                  }}>Logout</Button>
+                  <Nav.Link as={Link} to="/">Home</Nav.Link>
+                  <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
+                  <Nav.Link as={Link} to="/investor-qa">Q&A Simulator</Nav.Link>
+                  <Nav.Link as={Link} to="/market-validation">Market Validation</Nav.Link>
+                  <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                 </>
+              )}
+              {auth.token && auth.role === 'investor' && (
+                <Nav.Link as={Link} to="/investor-dashboard">Pitch Board</Nav.Link>
+              )}
+            </Nav>
+            <Nav>
+              {auth.token ? (
+                <Button 
+                  variant="danger" 
+                  onClick={() => {
+                    localStorage.removeItem('auth');
+                    window.location.href = '/';
+                  }}
+                >
+                  Logout
+                </Button>
               ) : (
-                <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                <>
+                  <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                  <Nav.Link as={Link} to="/signup">Sign Up</Nav.Link>
+                </>
               )}
             </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
 
-      <Container className="mt-4">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          
-          <Route path="/analyze" element={
-            <ProtectedRoute requiredRole="startup">
-              <Upload onUpload={handleUpload} loading={loading} />
-              {analysisData && <Analysis data={analysisData} />}
-            </ProtectedRoute>
-          }/>
+      <div className="main-content">
+        <Container>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
-          <Route path="/dashboard" element={
-            <ProtectedRoute requiredRole="startup">
-              <StartupDashboard />
-            </ProtectedRoute>
-          }/>
+            {/* Startup Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute requiredRole="startup">
+                <StartupDashboard />
+              </ProtectedRoute>
+            }/>
+            <Route path="/analyze" element={
+              <ProtectedRoute requiredRole="startup">
+                <Upload />
+                <Analysis />
+              </ProtectedRoute>
+            }/>
+            <Route path="/investor-qa" element={
+              <ProtectedRoute requiredRole="startup">
+                <InvestorQA />
+              </ProtectedRoute>
+            }/>
+            <Route path="/market-validation" element={
+              <ProtectedRoute requiredRole="startup">
+                <MarketValidation />
+              </ProtectedRoute>
+            }/>
 
-          <Route path="/investor" element={
-            <ProtectedRoute requiredRole="investor">
-              <InvestorDashboard />
-            </ProtectedRoute>
-          }/>
-
-          <Route path="/admin" element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminPanel />
-            </ProtectedRoute>
-          }/>
-        </Routes>
-      </Container>
+            {/* Investor Routes */}
+            <Route path="/investor-dashboard" element={
+              <ProtectedRoute requiredRole="investor">
+                <InvestorDashboard />
+              </ProtectedRoute>
+            }/>
+          </Routes>
+        </Container>
+      </div>
+      
       <Footer />
     </Router>
   );
 };
 
-export default () => (
-  <AuthProvider>
-    <App />
-  </AuthProvider>
-);
+export default App;
