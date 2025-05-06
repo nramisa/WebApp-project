@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Container, Table, Badge, Spinner } from 'react-bootstrap';
-import { AuthContext } from './context/AuthContext';
+import { AuthContext } from '../../context/AuthContext.jsx';
 
 const AdminPanel = () => {
   const { api } = useContext(AuthContext);
