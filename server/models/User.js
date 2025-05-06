@@ -1,14 +1,24 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
 const userSchema = new mongoose.Schema({
-    email: { type: String, unique: true },
-    password: String,
-    role: { type: String, enum: ['startup', 'investor'] },
-    profile: {
-      name: String,
-      industry: String,
-      interests: [String], // For investors
-      bio: String,
-      website: String,
-      pitchDeck: String // URL to uploaded PDF
-    },
-    matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Match' }]
-  });
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['startup', 'investor'], required: true },
+  profile: {
+    name: String,
+    industry: String,
+    bio: String,
+    website: String
+  },
+  createdAt: { type: Date, default: Date.now }
+});
+
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
+
+module.exports = mongoose.model('User', userSchema);
