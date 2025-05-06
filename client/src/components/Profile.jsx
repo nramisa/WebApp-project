@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Container, Row, Col, Card, ListGroup, Spinner } from 'react-bootstrap';
-import { AuthContext } from './context/AuthContext';
+import { AuthContext } from './context/AuthContext.jsx';
 
 const Profile = () => {
   const { auth, api } = useContext(AuthContext);
