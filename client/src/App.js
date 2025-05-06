@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useContext, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
+import { Navbar, Nav, Container, Spinner, Dropdown } from 'react-bootstrap';
 import { AuthContext, AuthProvider } from './context/AuthContext.jsx';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
@@ -18,6 +18,14 @@ const AppContent = () => {
   const { auth, logout } = useContext(AuthContext);
 
   const ProtectedRoute = ({ children, requiredRole }) => {
+    if (!auth.initialized) {
+      return (
+        <div className="text-center mt-5">
+          <Spinner animation="border" variant="danger" />
+        </div>
+      );
+    }
+    
     if (!auth.token) return <Navigate to="/login" replace />;
     if (requiredRole && auth.role !== requiredRole) return <Navigate to="/" replace />;
     return children;
@@ -82,41 +90,47 @@ const AppContent = () => {
 
       <div className="main-content">
         <Container>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }/>
+          <Suspense fallback={
+            <div className="text-center mt-5">
+              <Spinner animation="border" variant="danger" />
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }/>
 
-            {/* Startup Routes */}
-            <Route path="/analyze" element={
-              <ProtectedRoute requiredRole="startup">
-                <Upload />
-                <Analysis />
-              </ProtectedRoute>
-            }/>
-            <Route path="/investor-qa" element={
-              <ProtectedRoute requiredRole="startup">
-                <InvestorQA />
-              </ProtectedRoute>
-            }/>
-            <Route path="/market-validation" element={
-              <ProtectedRoute requiredRole="startup">
-                <MarketValidation />
-              </ProtectedRoute>
-            }/>
+              {/* Startup Routes */}
+              <Route path="/analyze" element={
+                <ProtectedRoute requiredRole="startup">
+                  <Upload />
+                  <Analysis />
+                </ProtectedRoute>
+              }/>
+              <Route path="/investor-qa" element={
+                <ProtectedRoute requiredRole="startup">
+                  <InvestorQA />
+                </ProtectedRoute>
+              }/>
+              <Route path="/market-validation" element={
+                <ProtectedRoute requiredRole="startup">
+                  <MarketValidation />
+                </ProtectedRoute>
+              }/>
 
-            {/* Admin Route */}
-            <Route path="/admin" element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminPanel />
-              </ProtectedRoute>
-            }/>
-          </Routes>
+              {/* Admin Route */}
+              <Route path="/admin" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPanel />
+                </ProtectedRoute>
+              }/>
+            </Routes>
+          </Suspense>
         </Container>
       </div>
       
