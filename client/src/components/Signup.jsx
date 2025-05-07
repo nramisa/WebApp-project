@@ -23,7 +23,7 @@ const Signup = ({ setIsAuthenticated }) => {
       localStorage.setItem('user', JSON.stringify(formData));
       localStorage.setItem('isAuthenticated', 'true');
       setIsAuthenticated(true);
-      navigate('/home');
+      navigate('/dashboard');
     } catch {
       setError('Failed to create account');
     }
