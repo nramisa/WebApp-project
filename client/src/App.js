@@ -10,17 +10,16 @@ import axios from 'axios';
 import './styles/base.css';
 import './styles/auth.css';
 
-// Components
 import PublicNavbar from './components/PublicNavbar';
 import PrivateNavbar from './components/PrivateNavbar';
 import Home from './components/Home';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import Analysis from './components/Analysis';
-import InvestorQA from './components/InvestorQA';
-import MarketValidation from './components/MarketValidation';
 import Upload from './components/Upload';
+import Analysis from './components/Analysis';
+import MarketValidation from './components/MarketValidation';
+import InvestorQA from './components/InvestorQA';
 import Footer from './components/Footer';
 
 function App() {
@@ -28,101 +27,90 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // On mount, read auth flag from localStorage
+  // on mount: read login flag from localStorage
   useEffect(() => {
-    const authStatus = localStorage.getItem('isAuthenticated');
-    setIsAuthenticated(!!authStatus);
+    const auth = localStorage.getItem('isAuthenticated');
+    setIsAuthenticated(Boolean(auth));
   }, []);
 
-  // File upload → analysis API
+  // file → backend → analysis results
   const handleUpload = async (file) => {
     if (!file) return;
-    setLoading(true);
 
+    setLoading(true);
     const formData = new FormData();
     formData.append('pitchFile', file);
 
     try {
-      const response = await axios.post(
+      const { data } = await axios.post(
         'http://localhost:3001/api/analyze',
         formData
       );
-      setAnalysis(response.data);
-    } catch (error) {
-      console.error('Upload failed:', error);
+      setAnalysis(data);
+    } catch (err) {
+      console.error('Upload failed:', err);
       alert('Analysis failed');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <Router>
-      {/* Switch Navbar based on auth */}
-      {isAuthenticated ? (
-        <PrivateNavbar />
-      ) : (
-        <PublicNavbar />
-      )}
+      {isAuthenticated ? <PrivateNavbar /> : <PublicNavbar />}
 
       <Routes>
-        {/* Public routes */}
+        {/* Public */}
         <Route path="/" element={<Home />} />
-        <Route
-          path="/login"
-          element={<Login setIsAuthenticated={setIsAuthenticated} />}
-        />
         <Route
           path="/signup"
           element={<Signup setIsAuthenticated={setIsAuthenticated} />}
         />
+        <Route
+          path="/login"
+          element={<Login setIsAuthenticated={setIsAuthenticated} />}
+        />
 
-        {/* Protected routes */}
+        {/* Protected */}
         <Route
           path="/dashboard"
           element={
-            isAuthenticated ? (
-              <Dashboard />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            isAuthenticated
+              ? <Dashboard />
+              : <Navigate to="/login" replace />
           }
         />
         <Route
           path="/analyze"
           element={
-            isAuthenticated ? (
-              <>
-                <Upload onUpload={handleUpload} loading={loading} />
-                {analysis && <Analysis data={analysis} />}
-              </>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            isAuthenticated
+              ? (
+                <>
+                  <Upload onUpload={handleUpload} loading={loading} />
+                  {analysis && <Analysis data={analysis} />}
+                </>
+              )
+              : <Navigate to="/login" replace />
           }
         />
         <Route
           path="/market"
           element={
-            isAuthenticated ? (
-              <MarketValidation />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            isAuthenticated
+              ? <MarketValidation />
+              : <Navigate to="/login" replace />
           }
         />
         <Route
           path="/qa"
           element={
-            isAuthenticated ? (
-              <InvestorQA />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            isAuthenticated
+              ? <InvestorQA />
+              : <Navigate to="/login" replace />
           }
         />
 
-        {/* Catch-all: redirect based on auth */}
+        {/* Fallback */}
         <Route
           path="*"
           element={
