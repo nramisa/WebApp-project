@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Card, ListGroup, Row, Col, Alert } from 'react-bootstrap'; // Fixed import
-import styles from '../styles/Analysis.module.css';
+import { Container, Card, ListGroup, Row, Col, Alert } from 'react-bootstrap';
+// import styles from '../styles/Analysis.module.css';  ← removed since unused
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -12,7 +12,6 @@ const Dashboard = () => {
       { id: 1, date: '2024-05-01', score: 82, summary: 'Strong team section but needs financial projections' },
       { id: 2, date: '2024-04-15', score: 75, summary: 'Good problem identification but lacks competitor analysis' }
     ];
-    
     setUser(userData);
     setAnalyses(mockAnalyses);
   }, []);
@@ -65,3 +64,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
