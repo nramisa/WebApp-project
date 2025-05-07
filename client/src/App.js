@@ -12,7 +12,6 @@ import MarketValidation from './components/MarketValidation';
 import Upload from './components/Upload';
 import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
-import './styles/base.css';
 
 const AppContent = () => {
   const { auth, logout } = useContext(AuthContext);
