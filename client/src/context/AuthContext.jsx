@@ -11,6 +11,25 @@ export const AuthProvider = ({ children }) => {
     initialized: false
   });
 
+  // Add this useEffect
+  useEffect(() => {
+    const saved = localStorage.getItem('auth');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setAuth({
+          ...parsed,
+          initialized: true
+        });
+      } catch (error) {
+        localStorage.removeItem('auth');
+        setAuth(prev => ({ ...prev, initialized: true }));
+      }
+    } else {
+      setAuth(prev => ({ ...prev, initialized: true }));
+    }
+  }, []);
+
   const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
     headers: {
