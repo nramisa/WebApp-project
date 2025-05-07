@@ -30,6 +30,28 @@ const AppContent = () => {
     return children;
   };
 
+  // Add loading state for navbar
+  return (
+    <Router>
+      <Navbar bg="light" expand="lg" fixed="top">
+        <Container>
+          <Navbar.Brand as={Link} to="/" className="logo">
+            {/* Fix logo path */}
+            <img src="%PUBLIC_URL%/logo.png" alt="PitchIn" style={{ height: '40px' }} />
+            PitchIn
+          </Navbar.Brand>
+          
+          {auth.initialized && (
+            <>
+              <Navbar.Toggle aria-controls="main-nav" />
+              <Navbar.Collapse id="main-nav">
+                {/* Rest of navbar code */}
+              </Navbar.Collapse>
+            </>
+          )}
+        </Container>
+      </Navbar>
+
   return (
     <Router>
       <Navbar bg="light" expand="lg" fixed="top">
