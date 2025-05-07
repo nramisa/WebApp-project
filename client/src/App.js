@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate
+} from 'react-router-dom';
 import axios from 'axios';
+
 import './styles/base.css';
 import './styles/auth.css';
 
@@ -22,53 +28,110 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // On mount, read auth flag from localStorage
   useEffect(() => {
     const authStatus = localStorage.getItem('isAuthenticated');
     setIsAuthenticated(!!authStatus);
   }, []);
 
+  // File upload → analysis API
   const handleUpload = async (file) => {
     if (!file) return;
     setLoading(true);
+
     const formData = new FormData();
     formData.append('pitchFile', file);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/analyze', formData);
+      const response = await axios.post(
+        'http://localhost:3001/api/analyze',
+        formData
+      );
       setAnalysis(response.data);
     } catch (error) {
       console.error('Upload failed:', error);
       alert('Analysis failed');
     }
+
     setLoading(false);
   };
 
   return (
     <Router>
-      {isAuthenticated ? <PrivateNavbar /> : <PublicNavbar />}
-      
+      {/* Switch Navbar based on auth */}
+      {isAuthenticated ? (
+        <PrivateNavbar />
+      ) : (
+        <PublicNavbar />
+      )}
+
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-        <Route path="/signup" element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
+        <Route
+          path="/login"
+          element={<Login setIsAuthenticated={setIsAuthenticated} />}
+        />
+        <Route
+          path="/signup"
+          element={<Signup setIsAuthenticated={setIsAuthenticated} />}
+        />
 
         {/* Protected routes */}
-        <Route path="/dashboard" element={
-          isAuthenticated ? <Dashboard /> : <Navigate to="/login" />
-        } />
-        <Route path="/analyze" element={
-          isAuthenticated ? (
-            <>
-              <Upload onUpload={handleUpload} loading={loading} />
-              {analysis && <Analysis data={analysis} />}
-            </>
-          ) : <Navigate to="/login" />
-        } />
-        <Route path="/market" element={isAuthenticated ? <MarketValidation /> : <Navigate to="/login" />} />
-        <Route path="/qa" element={isAuthenticated ? <InvestorQA /> : <Navigate to="/login" />} />
+        <Route
+          path="/dashboard"
+          element={
+            isAuthenticated ? (
+              <Dashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/analyze"
+          element={
+            isAuthenticated ? (
+              <>
+                <Upload onUpload={handleUpload} loading={loading} />
+                {analysis && <Analysis data={analysis} />}
+              </>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/market"
+          element={
+            isAuthenticated ? (
+              <MarketValidation />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/qa"
+          element={
+            isAuthenticated ? (
+              <InvestorQA />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
-        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} />} />
+        {/* Catch-all: redirect based on auth */}
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={isAuthenticated ? '/dashboard' : '/'}
+              replace
+            />
+          }
+        />
       </Routes>
 
       <Footer />
