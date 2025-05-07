@@ -2,19 +2,27 @@ import React from 'react';
 import { Navbar, Container, Nav, Image } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 
-const PrivateNavbar = () => {
+const PrivateNavbar = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // clear localStorage and React state
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
-    navigate('/login');
+    setIsAuthenticated(false);
+
+    // send user back to Home
+    navigate('/');
   };
 
   return (
     <Navbar bg="white" expand="lg" className="shadow-sm">
       <Container>
-        <Navbar.Brand as={Link} to="/dashboard" className="text-danger fw-bold">
+        <Navbar.Brand
+          as={Link}
+          to="/dashboard"
+          className="text-danger fw-bold"
+        >
           PitchIn
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -26,15 +34,20 @@ const PrivateNavbar = () => {
           </Nav>
           <Nav>
             <Nav.Link as={Link} to="/dashboard">
-              <Image 
-                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
-                width="30" 
-                height="30" 
-                roundedCircle 
+              <Image
+                src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                width="30"
+                height="30"
+                roundedCircle
                 className="border profile-image"
               />
             </Nav.Link>
-            <Nav.Link onClick={handleLogout} className="text-danger">Logout</Nav.Link>
+            <Nav.Link
+              onClick={handleLogout}
+              className="text-danger"
+            >
+              Logout
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
@@ -43,3 +56,4 @@ const PrivateNavbar = () => {
 };
 
 export default PrivateNavbar;
+
