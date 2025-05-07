@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, ListGroup, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Card, ListGroup, Row, Col, Alert } from 'react-bootstrap'; // Fixed import
 import styles from '../styles/Analysis.module.css';
 
 const Dashboard = () => {
