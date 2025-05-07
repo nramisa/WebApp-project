@@ -6,19 +6,29 @@
     "axios": "^1.9.0",
     "bootstrap": "^5.3.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "react-bootstrap": "^2.10.0",
+    "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1",
     "react-scripts": "5.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && mv build/static/css/*.css build/styles/ && cp public/* build/",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
@@ -26,3 +36,4 @@
     ]
   }
 }
+
