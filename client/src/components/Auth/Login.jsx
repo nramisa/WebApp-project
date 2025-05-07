@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await login(email, password);
-    if (success) navigate(auth.role === 'admin' ? '/admin' : '/dashboard');
+    if (success) navigate(auth.role === 'admin' ? '/admin' : '/');
     else setError('Invalid credentials');
   };
 
