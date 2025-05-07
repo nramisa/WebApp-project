@@ -11,6 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/health', (req, res) => {
+  return res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Mount your routers under /api
 app.use('/api/auth', authRoutes);
 app.use('/api/analysis', analysisRoutes);
