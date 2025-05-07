@@ -4,7 +4,7 @@ const multer        = require('multer');
 const pdfParse      = require('pdf-parse');
 const unzipper      = require('unzipper');
 const { XMLParser } = require('fast-xml-parser');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI        = require('openai');
 
 const auth     = require('../middleware/auth');
 const Analysis = require('../models/Analysis');
@@ -12,22 +12,19 @@ const Analysis = require('../models/Analysis');
 const router = express.Router();
 const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25MB max
 
-// initialize OpenAI client
-const openai = new OpenAIApi(new Configuration({
+// initialize OpenAI client (v4 SDK)
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-}));
+});
 
-// helper: recursively extract text nodes
+// helper: recursively extract <a:t> text from parsed XML nodes
 function extractText(node) {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join(' ');
   if (typeof node === 'object') {
-    let text = '';
-    for (let key in node) {
-      if (key === 'a:t') text += node[key] + ' ';
-      else text += extractText(node[key]);
-    }
-    return text;
+    return Object.values(node)
+      .map(extractText)
+      .join(' ');
   }
   return '';
 }
@@ -37,44 +34,40 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   try {
     let text = '';
 
-    // 1) PDF handling
+    // 1) PDF
     if (req.file.mimetype === 'application/pdf') {
       const data = await pdfParse(req.file.buffer);
       text = data.text;
 
-    // 2) PPTX handling
+    // 2) PPTX
     } else if (
-      req.file.mimetype === 
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      req.file.mimetype ===
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     ) {
-      // unzip the PPTX buffer
       const directory = await unzipper.Open.buffer(req.file.buffer);
-
-      // find all slide XML files
       const slides = directory.files.filter(f =>
         /ppt\/slides\/slide\d+\.xml$/.test(f.path)
       );
 
-      // parse and extract text from each slide
       const parser = new XMLParser({ ignoreAttributes: false });
       let accumulated = '';
 
       for (let slideFile of slides) {
         const content = await slideFile.buffer();
-        const json = parser.parse(content.toString());
-
-        // extract text recursively
-        accumulated += extractText(json) + '\n\n';
+        const json    = parser.parse(content.toString());
+        accumulated  += extractText(json) + '\n\n';
       }
 
       text = accumulated;
 
-    // 3) unsupported type
+    // 3) reject others
     } else {
-      return res.status(400).json({ message: 'Unsupported file type. Please upload PDF or PPTX.' });
+      return res
+        .status(400)
+        .json({ message: 'Unsupported file type. Please upload PDF or PPTX.' });
     }
 
-    // 4) Build the prompt for OpenAI
+    // 4) Build prompt
     const prompt = `
 You are an expert at startup pitches. Analyze the following text and give feedback in three sections:
 1) Structure
@@ -87,19 +80,18 @@ ${text}
 """
 `;
 
-    // 5) Call OpenAI
-    const aiRes = await openai.createChatCompletion({
-      model: 'gpt-4o-mini',
+    // 5) Call the Chat Completion endpoint
+    const completion = await openai.chat.completions.create({
+      model:    'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }]
     });
 
-    const content = aiRes.data.choices[0].message.content;
-    // split on “1)”, “2)”, “3)” (or “1) ”, “2) ”, “3) ”)
-    const parts = content.split(/\n?\d\)\s*/).slice(1);
+    const contentStr = completion.choices[0].message.content;
+    const parts      = contentStr.split(/\n?\d\)\s*/).slice(1);
 
-    // 6) Save to MongoDB
+    // 6) Persist to MongoDB
     const analysis = await Analysis.create({
-      user: req.userId,
+      user:     req.userId,
       filename: req.file.originalname,
       feedback: {
         structure: parts[0]?.trim()  || '',
@@ -108,7 +100,7 @@ ${text}
       }
     });
 
-    // 7) Return the saved document
+    // 7) Return result
     res.json(analysis);
 
   } catch (err) {
