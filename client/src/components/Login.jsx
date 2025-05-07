@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Card, Alert } from 'react-bootstrap';
-import styles from '../styles/Analysis.module.css';
+import { Form, Button, Alert } from 'react-bootstrap';
+import '../styles/auth.css';
 
-const Login = () => {
+const Login = ({ setIsAuthenticated }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -17,15 +17,14 @@ const Login = () => {
     setLoading(true);
     setError('');
     
-    // Mock login - in a real app, this would call your backend
     try {
-      // Check if user exists in localStorage (from signup)
       const user = JSON.parse(localStorage.getItem('user'));
       if (user && user.email === formData.email && user.password === formData.password) {
         localStorage.setItem('isAuthenticated', 'true');
-        navigate('/');
+        setIsAuthenticated(true);
+        navigate('/home');
       } else {
-        setError('Invalid credentials');
+        setError('Invalid email or password');
       }
     } catch {
       setError('Failed to log in');
@@ -34,44 +33,49 @@ const Login = () => {
   };
 
   return (
-    <div className={styles.uploadCard}>
-      <Card className="shadow-lg border-0">
-        <Card.Body className="p-5">
-          <h2 className="text-center mb-4">Log In</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control 
-                type="email" 
-                required 
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-            </Form.Group>
-            <Form.Group className="mb-4">
-              <Form.Label>Password</Form.Label>
-              <Form.Control 
-                type="password" 
-                required 
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-              />
-            </Form.Group>
-            <Button 
-              disabled={loading} 
-              className="w-100 py-3" 
-              variant="danger" 
-              type="submit"
-            >
-              Log In
-            </Button>
-          </Form>
-          <div className="text-center mt-3">
-            Need an account? <Link to="/signup">Sign Up</Link>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to continue to PitchIn</p>
+        </div>
+
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        <Form onSubmit={handleSubmit} className="auth-form">
+          <Form.Group className="mb-3">
+            <Form.Label>Email Address</Form.Label>
+            <Form.Control 
+              type="email" 
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-4">
+            <Form.Label>Password</Form.Label>
+            <Form.Control 
+              type="password" 
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+            />
+          </Form.Group>
+
+          <Button 
+            disabled={loading} 
+            variant="primary"
+            type="submit"
+          >
+            {loading ? 'Signing In...' : 'Sign In'}
+          </Button>
+
+          <div className="auth-footer mt-3">
+            Don't have an account? <Link to="/signup">Create Account</Link>
           </div>
-        </Card.Body>
-      </Card>
+        </Form>
+      </div>
     </div>
   );
 };
