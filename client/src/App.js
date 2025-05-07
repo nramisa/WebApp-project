@@ -1,16 +1,11 @@
 import React, { useContext, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Navbar, Nav, Container, Spinner, Dropdown } from 'react-bootstrap';
-import { AuthContext, AuthProvider } from './context/AuthContext.jsx';
 import Home from './components/Home';
-import Login from './components/Auth/Login';
-import Signup from './components/Auth/Signup';
-import Profile from './components/Profile';
 import Analysis from './components/Analysis';
 import InvestorQA from './components/InvestorQA';
 import MarketValidation from './components/MarketValidation';
 import Upload from './components/Upload';
-import AdminPanel from './components/AdminPanel';
 import Footer from './components/Footer';
 
 const AppContent = () => {
