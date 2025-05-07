@@ -1,5 +1,3 @@
-# PitchIn Web App (In Progress)
-
 ## Hosted Frontend Prototype:
 [Click to view](https://web-app-project-umber.vercel.app/)
 - Sign Up to view the whole website for now. 
