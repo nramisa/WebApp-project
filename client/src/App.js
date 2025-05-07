@@ -42,10 +42,8 @@ function App() {
     formData.append('pitchFile', file);
 
     try {
-      const { data } = await axios.post(
-        'http://localhost:3001/api/analyze',
-        formData
-      );
+      const { data } = await axios.post('https://webapp-project-rxn5.onrender.com/api/analyze', formData);
+
       setAnalysis(data);
     } catch (err) {
       console.error('Upload failed:', err);
