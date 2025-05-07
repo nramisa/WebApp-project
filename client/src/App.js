@@ -14,6 +14,7 @@ import Dashboard from './components/Dashboard';
 import Analysis from './components/Analysis';
 import InvestorQA from './components/InvestorQA';
 import MarketValidation from './components/MarketValidation';
+import Upload from './components/Upload';
 import Footer from './components/Footer';
 
 function App() {
@@ -70,7 +71,7 @@ function App() {
         <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} />} />
       </Routes>
 
-      {isAuthenticated && <Footer />}
+      <Footer />
     </Router>
   );
 }
