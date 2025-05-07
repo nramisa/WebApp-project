@@ -71,16 +71,7 @@ const Signup = ({ setIsAuthenticated }) => {
             />
           </Form.Group>
 
-          <Form.Group className="mb-4">
-            <Form.Label>Startup Name</Form.Label>
-            <Form.Control 
-              type="text" 
-              required
-              value={formData.startupName}
-              onChange={(e) => setFormData({...formData, startupName: e.target.value})}
-            />
-          </Form.Group>
-
+          
           <Button 
             disabled={loading} 
             variant="primary"
