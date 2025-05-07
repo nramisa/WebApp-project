@@ -1,8 +1,9 @@
-const API_BASE = process.env.REACT_APP_API_URL;
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import '../styles/auth.css';
+
+const API_BASE = process.env.REACT_APP_API_URL;
 
 const Signup = ({ setIsAuthenticated }) => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
