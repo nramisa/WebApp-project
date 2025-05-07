@@ -27,13 +27,13 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // on mount: read login flag from localStorage
+  // on mount: sync auth flag from localStorage
   useEffect(() => {
     const auth = localStorage.getItem('isAuthenticated');
     setIsAuthenticated(Boolean(auth));
   }, []);
 
-  // file → backend → analysis results
+  // send file to backend → get analysis
   const handleUpload = async (file) => {
     if (!file) return;
 
@@ -57,7 +57,10 @@ function App() {
 
   return (
     <Router>
-      {isAuthenticated ? <PrivateNavbar /> : <PublicNavbar />}
+      {isAuthenticated
+        ? <PrivateNavbar setIsAuthenticated={setIsAuthenticated} />
+        : <PublicNavbar />
+      }
 
       <Routes>
         {/* Public */}
