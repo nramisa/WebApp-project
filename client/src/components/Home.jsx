@@ -164,7 +164,7 @@ const Home = () => {
             as={Link} 
 
 
-            to="/analyze" 
+            to="/signup"
 
 
             variant="outline-light" 
