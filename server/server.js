@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -19,20 +20,25 @@ app.use(cors({
 app.use(express.json());
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI, {
+const uri = process.env.MONGODB_URI;
+const dbOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  ssl: true,
-  sslValidate: true
-}).then(() => console.log('Connected to MongoDB Atlas'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  // If you really need to allow invalid certs (self-signed), uncomment:
+  // tls: true,
+  // tlsAllowInvalidCertificates: true,
+};
+
+mongoose
+  .connect(uri, dbOptions)
+  .then(() => console.log('✔️ Connected to MongoDB Atlas'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Auth Endpoints
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
-    
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -46,65 +52,19 @@ app.post('/api/login', async (req, res) => {
     res.json({
       token,
       role: user.role,
-      userData: { 
-        name: user.profile.name, 
+      userData: {
+        name: user.profile.name,
         email: user.email,
-        id: user._id 
+        // add any other profile fields you need
       }
     });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-app.post('/api/signup', async (req, res) => {
-  try {
-    const { email, password, role, adminSecret } = req.body;
-    
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    // Admin validation
-    if (role === 'admin') {
-      if (adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ error: 'Invalid admin secret' });
-      }
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      role: role || 'startup',
-      profile: { name: email.split('@')[0] }
-    });
-
-    await newUser.save();
-
-    const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    res.status(201).json({
-      token,
-      role: newUser.role,
-      userData: { 
-        name: newUser.profile.name, 
-        email: newUser.email,
-        id: newUser._id
-      }
-    });
-  } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Admin Endpoint
+// Example Protected Route
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -115,4 +75,5 @@ app.get('/api/users', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
