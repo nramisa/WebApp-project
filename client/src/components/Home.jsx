@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom'; //Import routing
 import { Button, Container, Row, Col, Card } from 'react-bootstrap';
 import '../styles/home.css';
+import '../styles/base.css';
 
 const Home = () => {
   const testimonials = [ /* Array of testimonial objects */
