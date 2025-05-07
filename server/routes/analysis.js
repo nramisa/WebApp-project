@@ -2,7 +2,8 @@
 const express   = require('express');
 const multer    = require('multer');
 const pdfParse  = require('pdf-parse');
-const pptxParser= require('pptx-parser');
+const unzipper = require('unzipper');
+const { XMLParser } = require('fast-xml-parser');
 const { Configuration, OpenAIApi } = require('openai');
 
 const auth      = require('../middleware/auth');
