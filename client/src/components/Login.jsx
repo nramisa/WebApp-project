@@ -22,7 +22,7 @@ const Login = ({ setIsAuthenticated }) => {
       if (user && user.email === formData.email && user.password === formData.password) {
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
-        navigate('/home');
+        navigate('/dashboard');
       } else {
         setError('Invalid email or password');
       }
