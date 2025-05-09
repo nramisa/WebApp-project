@@ -39,22 +39,17 @@ function App() {
 
     setLoading(true);
     const formData = new FormData();
-    formData.append('file', file); // ✅ fixed: must match multer field name
+    formData.append('file', file); // <-- must match multer.single('file')
 
     try {
       const { data } = await axios.post(
-        'https://webapp-project-rxn5.onrender.com/api/analysis/upload', // ✅ fixed: correct endpoint
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        'https://webapp-project-rxn5.onrender.com/api/analysis/upload',
+        formData                // <-- no manual headers here
       );
 
       setAnalysis(data);
     } catch (err) {
-      console.error('Upload failed:', err.response || err.message);
+      console.error('Upload failed:', err.response?.data || err.message);
       alert('Analysis failed. Please make sure your file is a valid PDF or PPTX and under 25MB.');
     } finally {
       setLoading(false);
