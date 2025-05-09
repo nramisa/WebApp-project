@@ -10,7 +10,11 @@ const { OpenAI } = require('openai');
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// ✅ OpenRouter setup (NOT OpenAI)
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+});
 
 // Extract text from PDF
 async function extractTextFromPDF(filePath) {
@@ -19,7 +23,7 @@ async function extractTextFromPDF(filePath) {
   return data.text;
 }
 
-// Extract text from PPTX
+// Extract text from PPTX (ignore images, extract only text)
 async function extractTextFromPPTX(filePath) {
   const directory = await unzipper.Open.file(filePath);
   const parser = new XMLParser();
@@ -56,7 +60,6 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
   try {
     const filePath = req.file.path;
     const ext = path.extname(req.file.originalname).toLowerCase();
-
     let textContent = '';
 
     if (ext === '.pdf') {
@@ -68,20 +71,21 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Unsupported file type. Only PDF and PPTX are allowed.' });
     }
 
-    fs.unlinkSync(filePath); // clean up temp file
+    fs.unlinkSync(filePath); // Delete temp file
 
     if (!textContent.trim()) {
       return res.status(400).json({ error: 'No readable text found in the file.' });
     }
 
+    // Send prompt to OpenRouter (e.g., GPT-4 or Claude-3)
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "openai/gpt-4", // or try "anthropic/claude-3-opus" etc.
       messages: [
         {
           role: "user",
-          content: `Analyze the content below and give an overview:\n\n${textContent}`
-        }
-      ]
+          content: `Give a high-level summary and analysis of this presentation content:\n\n${textContent}`,
+        },
+      ],
     });
 
     const analysis = completion.choices[0].message.content;
