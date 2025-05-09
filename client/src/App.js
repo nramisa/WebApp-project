@@ -39,7 +39,7 @@ function App() {
 
     setLoading(true);
     const formData = new FormData();
-    formData.append('pitchFile', file);
+    formData.append('file', file);
 
     try {
       const { data } = await axios.post('https://webapp-project-rxn5.onrender.com/api/analyze', formData);
