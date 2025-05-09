@@ -10,12 +10,19 @@ const auth     = require('../middleware/auth');
 const Analysis = require('../models/Analysis');
 
 const router = express.Router();
-const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25MB max
+const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25 MB
 
-// initialize OpenAI client (v4 SDK)
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// 1) Initialize OpenAI client against OpenRouter
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'https://yourdomain.com',  // change if needed
+    'X-Title': 'PitchIn App'
+  }
+});
 
-// helper to pull text out of pptx XML
+// helper: extract text from PPTX XML
 function extractText(node) {
   if (typeof node === 'string') return node;
   if (Array.isArray(node))  return node.map(extractText).join(' ');
@@ -24,65 +31,43 @@ function extractText(node) {
   return '';
 }
 
-// POST /api/analysis/upload
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
   try {
-    // 1) validate file
     if (!req.file) {
-      console.warn('⚠️  No file on req.file');
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    console.log('📥 Received file:', {
-      originalName: req.file.originalname,
-      mimeType:     req.file.mimetype,
-      size:         req.file.size
-    });
-
-    const name    = req.file.originalname.toLowerCase();
-    const isPdf   = req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(name);
-    const isPptx  = req.file.mimetype ===
-                     'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-                     /\.pptx$/i.test(name);
-
+    // parse PDF or PPTX
     let text = '';
+    const name = req.file.originalname.toLowerCase();
+    const isPdf  = req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(name);
+    const isPptx = req.file.mimetype ===
+                   'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                   /\.pptx$/i.test(name);
 
-    // 2) PDF path
     if (isPdf) {
-      try {
-        const data = await pdfParse(req.file.buffer);
-        text = data.text;
-      } catch (parseErr) {
-        console.error('❌ PDF parse error:', parseErr);
-        return res.status(500).json({ message: 'PDF parse error: ' + parseErr.message });
-      }
-
-    // 3) PPTX path
+      const data = await pdfParse(req.file.buffer);
+      text = data.text;
     } else if (isPptx) {
-      const directory = await unzipper.Open.buffer(req.file.buffer);
-      const slides = directory.files.filter(f =>
-        /ppt\/slides\/slide\d+\.xml$/.test(f.path)
-      );
-
+      const dir    = await unzipper.Open.buffer(req.file.buffer);
+      const slides = dir.files.filter(f => /ppt\/slides\/slide\d+\.xml$/.test(f.path));
       const parser = new XMLParser({ ignoreAttributes: false });
-      let accumulated = '';
-
-      for (let slideFile of slides) {
-        const content = await slideFile.buffer();
-        const json    = parser.parse(content.toString());
-        accumulated  += extractText(json) + '\n\n';
+      for (let s of slides) {
+        const buffer = await s.buffer();
+        text += extractText(parser.parse(buffer.toString())) + '\n\n';
       }
-      text = accumulated;
-
-    // 4) unsupported
     } else {
-      console.warn('⚠️  Unsupported file type:', req.file.mimetype);
-      return res.status(400).json({
-        message: 'Unsupported file type. Please upload a PDF or PPTX file.'
-      });
+      return res.status(400).json({ message: 'Unsupported file type. Use PDF or PPTX.' });
     }
 
-    // 5) build prompt
+    // 2) Truncate to ~6000 chars to save tokens
+    const MAX_CHARS = 6000;
+    if (text.length > MAX_CHARS) {
+      console.log(`✂️ Truncate text ${text.length}→${MAX_CHARS}`);
+      text = text.slice(0, MAX_CHARS);
+    }
+
+    // 3) Build prompt
     const prompt = `
 You are an expert at startup pitches. Analyze the following text and give feedback in three sections:
 1) Structure
@@ -95,16 +80,18 @@ ${text}
 """
 `;
 
-    // 6) call OpenAI
+    console.log(`🚀 Calling OpenRouter Qwen3 with prompt length ${prompt.length}`);
+
+    // 4) Call the free model
     const completion = await openai.chat.completions.create({
-      model:    'gpt-4o-mini',
+      model:    'qwen3-235b-a22b',
       messages: [{ role: 'system', content: prompt }]
     });
 
     const contentStr = completion.choices[0].message.content;
     const parts      = contentStr.split(/\n?\d\)\s*/).slice(1);
 
-    // 7) save to Mongo
+    // 5) Persist
     const analysis = await Analysis.create({
       user:     req.userId,
       filename: req.file.originalname,
@@ -115,11 +102,18 @@ ${text}
       }
     });
 
-    // 8) return
     res.json(analysis);
 
   } catch (err) {
-    console.error('🔥 Analysis route error:', err);
+    console.error('🔥 Analysis error:', err);
+
+    // if you somehow burn through Qwen’s 12.8B tokens/wk
+    if (err.code === 'insufficient_quota' || err.status === 429) {
+      return res.status(429).json({
+        message: 'Free model quota exhausted—please wait before retrying.'
+      });
+    }
+
     res.status(500).json({ message: err.message || 'Analysis failed' });
   }
 });
