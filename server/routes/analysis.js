@@ -13,37 +13,52 @@ const router = express.Router();
 const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25MB max
 
 // initialize OpenAI client (v4 SDK)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// helper: recursively extract <a:t> text from parsed XML nodes
+// helper to pull text out of pptx XML
 function extractText(node) {
   if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join(' ');
-  if (typeof node === 'object') {
-    return Object.values(node)
-      .map(extractText)
-      .join(' ');
-  }
+  if (Array.isArray(node))  return node.map(extractText).join(' ');
+  if (typeof node === 'object')
+    return Object.values(node).map(extractText).join(' ');
   return '';
 }
 
 // POST /api/analysis/upload
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
   try {
+    // 1) validate file
+    if (!req.file) {
+      console.warn('⚠️  No file on req.file');
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    console.log('📥 Received file:', {
+      originalName: req.file.originalname,
+      mimeType:     req.file.mimetype,
+      size:         req.file.size
+    });
+
+    const name    = req.file.originalname.toLowerCase();
+    const isPdf   = req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(name);
+    const isPptx  = req.file.mimetype ===
+                     'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                     /\.pptx$/i.test(name);
+
     let text = '';
 
-    // 1) PDF
-    if (req.file.mimetype === 'application/pdf') {
-      const data = await pdfParse(req.file.buffer);
-      text = data.text;
+    // 2) PDF path
+    if (isPdf) {
+      try {
+        const data = await pdfParse(req.file.buffer);
+        text = data.text;
+      } catch (parseErr) {
+        console.error('❌ PDF parse error:', parseErr);
+        return res.status(500).json({ message: 'PDF parse error: ' + parseErr.message });
+      }
 
-    // 2) PPTX
-    } else if (
-      req.file.mimetype ===
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    ) {
+    // 3) PPTX path
+    } else if (isPptx) {
       const directory = await unzipper.Open.buffer(req.file.buffer);
       const slides = directory.files.filter(f =>
         /ppt\/slides\/slide\d+\.xml$/.test(f.path)
@@ -57,17 +72,17 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
         const json    = parser.parse(content.toString());
         accumulated  += extractText(json) + '\n\n';
       }
-
       text = accumulated;
 
-    // 3) reject others
+    // 4) unsupported
     } else {
-      return res
-        .status(400)
-        .json({ message: 'Unsupported file type. Please upload PDF or PPTX.' });
+      console.warn('⚠️  Unsupported file type:', req.file.mimetype);
+      return res.status(400).json({
+        message: 'Unsupported file type. Please upload a PDF or PPTX file.'
+      });
     }
 
-    // 4) Build prompt
+    // 5) build prompt
     const prompt = `
 You are an expert at startup pitches. Analyze the following text and give feedback in three sections:
 1) Structure
@@ -80,7 +95,7 @@ ${text}
 """
 `;
 
-    // 5) Call the Chat Completion endpoint
+    // 6) call OpenAI
     const completion = await openai.chat.completions.create({
       model:    'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }]
@@ -89,7 +104,7 @@ ${text}
     const contentStr = completion.choices[0].message.content;
     const parts      = contentStr.split(/\n?\d\)\s*/).slice(1);
 
-    // 6) Persist to MongoDB
+    // 7) save to Mongo
     const analysis = await Analysis.create({
       user:     req.userId,
       filename: req.file.originalname,
@@ -100,12 +115,12 @@ ${text}
       }
     });
 
-    // 7) Return result
+    // 8) return
     res.json(analysis);
 
   } catch (err) {
-    console.error('Analysis error:', err);
-    res.status(500).json({ message: 'Analysis failed' });
+    console.error('🔥 Analysis route error:', err);
+    res.status(500).json({ message: err.message || 'Analysis failed' });
   }
 });
 
