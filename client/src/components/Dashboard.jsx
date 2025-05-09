@@ -1,5 +1,3 @@
-// client/src/components/Dashboard.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -104,24 +102,31 @@ const Dashboard = () => {
                     <Spinner animation="border" />
                   ) : error.pitch ? (
                     <Alert variant="danger">{error.pitch}</Alert>
-                  ) : pitchHistory.length > 0 ? (
+                  ) : Array.isArray(pitchHistory) && pitchHistory.length > 0 ? (
                     <ListGroup variant="flush" className="mt-3">
-                      {pitchHistory.map(a => (
-                        <ListGroup.Item key={a._id} className="py-3">
-                          <div className="d-flex justify-content-between">
-                            <div>
-                              <h5>{new Date(a.uploadedAt).toLocaleDateString()}</h5>
-                              <p className="mb-1"><strong>File:</strong> {a.filename}</p>
-                              <p className="mb-0 text-muted">
-                                {a.feedback.structure.substring(0, 100)}…
-                              </p>
+                      {pitchHistory.map((a, i) => {
+                        const feedback = a.feedback || a.analysis?.feedback;
+                        return (
+                          <ListGroup.Item key={a._id || i} className="py-3">
+                            <div className="d-flex justify-content-between">
+                              <div>
+                                <h5>{new Date(a.uploadedAt || a.createdAt).toLocaleDateString()}</h5>
+                                <p className="mb-1"><strong>File:</strong> {a.filename || 'N/A'}</p>
+                                <p className="mb-0 text-muted">
+                                  {feedback?.structure
+                                    ? feedback.structure.substring(0, 100) + '…'
+                                    : 'No feedback available'}
+                                </p>
+                              </div>
+                              <div className="text-primary fw-bold fs-4">
+                                {feedback
+                                  ? computePitchScore(feedback) + '%'
+                                  : 'N/A'}
+                              </div>
                             </div>
-                            <div className="text-primary fw-bold fs-4">
-                              {computePitchScore(a.feedback)}%
-                            </div>
-                          </div>
-                        </ListGroup.Item>
-                      ))}
+                          </ListGroup.Item>
+                        );
+                      })}
                     </ListGroup>
                   ) : (
                     <Alert variant="info" className="mt-3">
@@ -145,10 +150,10 @@ const Dashboard = () => {
                             <strong>Domain:</strong> {s.domain} &mdash; <strong>Stage:</strong> {s.fundingStage}
                           </p>
                           <p className="mb-1 text-muted">
-                            {s.questions.slice(0, 3).join(' | ')}…
+                            {s.questions?.slice(0, 3).join(' | ') || 'No questions'}…
                           </p>
                           <small className="text-secondary">
-                            {s.questions.length} questions generated
+                            {s.questions?.length || 0} questions generated
                           </small>
                         </ListGroup.Item>
                       ))}
@@ -171,6 +176,7 @@ const Dashboard = () => {
                       {marketHistory.map(s => (
                         <ListGroup.Item key={s._id} className="py-3">
                           <h5>{new Date(s.createdAt).toLocaleDateString()}</h5>
+                          <p className="mb-1"><strong>Startup:</strong> {s.startupName}</p>
                           <p className="mb-1">
                             <strong>Domain:</strong> {s.domain}
                           </p>
@@ -178,7 +184,7 @@ const Dashboard = () => {
                             Score: <strong>{s.score}%</strong>
                           </p>
                           <p className="mb-0 text-muted">
-                            {s.analysis.substring(0, 100)}…
+                            {s.advice?.substring(0, 100) || 'No advice'}…
                           </p>
                         </ListGroup.Item>
                       ))}
