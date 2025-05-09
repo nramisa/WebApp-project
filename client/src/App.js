@@ -1,4 +1,3 @@
-// client/src/App.js
 import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -47,36 +46,41 @@ function App() {
     setIsAuthenticated(Boolean(auth));
   }, []);
 
-  // 2) Fully-instrumented upload handler
-  const handleUpload = async (file) => {
-    if (!file) {
-      alert('Please select a file first.');
+  // 2) Upload handler now accepts single or multiple files
+  const handleUpload = async (fileOrFiles) => {
+    const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+    if (!files.length) {
+      alert('Please select one or more files first.');
       return;
     }
 
-    console.log('🔹 Selected file:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
-
     setLoading(true);
     const formData = new FormData();
-    formData.append('file', file); // ← must match multer.single('file')
 
-    // Log FormData entries
+    files.forEach(file => {
+      console.log('🔹 Selected file:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      formData.append('files', file);
+    });
+
     for (let [key, val] of formData.entries()) {
       console.log('🔸 formData entry:', key, val);
     }
 
     try {
-      const res = await api.post('/api/analysis/analyze', formData);
+      const res = await api.post('/api/analysis/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       console.log('✅ Upload success, server responded with:', res.data);
-      setAnalysis(res.data);
+      // server returns { results: [...] }
+      setAnalysis(res.data.results);
     } catch (err) {
       console.error('❌ Upload error object:', err);
       const status  = err.response?.status;
-      const message = err.response?.data?.message || err.message;
+      const message = err.response?.data?.error || err.message;
       alert(`Upload failed (HTTP ${status}): ${message}`);
     } finally {
       setLoading(false);
