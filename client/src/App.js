@@ -1,3 +1,4 @@
+// client/src/App.js
 import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -22,39 +23,61 @@ import MarketValidation  from './components/MarketValidation';
 import InvestorQA        from './components/InvestorQA';
 import Footer            from './components/Footer';
 
+// 1) Create axios instance with baseURL & JWT interceptor
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL, // e.g. "https://webapp-project-rxn5.onrender.com"
+});
+
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 function App() {
-  const [analysis,       setAnalysis]       = useState(null);
-  const [loading,        setLoading]        = useState(false);
+  const [analysis,        setAnalysis]        = useState(null);
+  const [loading,         setLoading]         = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Sync auth flag on mount
   useEffect(() => {
     const auth = localStorage.getItem('isAuthenticated');
     setIsAuthenticated(Boolean(auth));
   }, []);
 
+  // 2) Fully-instrumented upload handler
   const handleUpload = async (file) => {
-    if (!file) return;
-    setLoading(true);
+    if (!file) {
+      alert('Please select a file first.');
+      return;
+    }
 
+    console.log('🔹 Selected file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
+    setLoading(true);
     const formData = new FormData();
     formData.append('file', file); // ← must match multer.single('file')
 
+    // Log FormData entries
+    for (let [key, val] of formData.entries()) {
+      console.log('🔸 formData entry:', key, val);
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      const { data } = await axios.post(
-        'https://webapp-project-rxn5.onrender.com/api/analysis/upload',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`  // ← attach your JWT
-            // no need to set Content-Type here
-          }
-        }
-      );
-      setAnalysis(data);
+      const res = await api.post('/api/analysis/upload', formData);
+      console.log('✅ Upload success, server responded with:', res.data);
+      setAnalysis(res.data);
     } catch (err) {
-      console.error('Upload failed:', err.response?.data || err.message);
-      alert('Analysis failed. Please ensure your file is PDF/PPTX, under 25 MB, and that you’re logged in.');
+      console.error('❌ Upload error object:', err);
+      const status  = err.response?.status;
+      const message = err.response?.data?.message || err.message;
+      alert(`Upload failed (HTTP ${status}): ${message}`);
     } finally {
       setLoading(false);
     }
@@ -68,37 +91,63 @@ function App() {
       }
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/signup"
-               element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
-        <Route path="/login"
-               element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+        {/* Public */}
+        <Route path="/"       element={<Home />} />
+        <Route path="/signup" element={<Signup setIsAuthenticated={setIsAuthenticated} />} />
+        <Route path="/login"  element={<Login setIsAuthenticated={setIsAuthenticated} />} />
 
-        <Route path="/dashboard"
-               element={isAuthenticated
-                 ? <Dashboard />
-                 : <Navigate to="/login" replace />} />
+        {/* Protected */}
+        <Route
+          path="/dashboard"
+          element={
+            isAuthenticated
+              ? <Dashboard />
+              : <Navigate to="/login" replace />
+          }
+        />
 
-        <Route path="/analyze"
-               element={isAuthenticated
-                 ? <>
-                     <Upload onUpload={handleUpload} loading={loading} />
-                     {analysis && <Analysis data={analysis} />}
-                   </>
-                 : <Navigate to="/login" replace />} />
+        <Route
+          path="/analyze"
+          element={
+            isAuthenticated
+              ? (
+                <>
+                  <Upload onUpload={handleUpload} loading={loading} />
+                  {analysis && <Analysis data={analysis} />}
+                </>
+              )
+              : <Navigate to="/login" replace />
+          }
+        />
 
-        <Route path="/market"
-               element={isAuthenticated
-                 ? <MarketValidation />
-                 : <Navigate to="/login" replace />} />
+        <Route
+          path="/market"
+          element={
+            isAuthenticated
+              ? <MarketValidation />
+              : <Navigate to="/login" replace />
+          }
+        />
 
-        <Route path="/qa"
-               element={isAuthenticated
-                 ? <InvestorQA />
-                 : <Navigate to="/login" replace />} />
+        <Route
+          path="/qa"
+          element={
+            isAuthenticated
+              ? <InvestorQA />
+              : <Navigate to="/login" replace />
+          }
+        />
 
-        <Route path="*"
-               element={<Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />} />
+        {/* Fallback */}
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={isAuthenticated ? '/dashboard' : '/'}
+              replace
+            />
+          }
+        />
       </Routes>
 
       <Footer />
