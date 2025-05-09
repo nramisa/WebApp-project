@@ -1,7 +1,7 @@
 // client/src/components/InvestorQA.jsx
 
-import React, { useState, useEffect } from 'react';
-import { Form, Button, Card, ListGroup, Spinner, Alert } from 'react-bootstrap';
+import React, { useState} from 'react';
+import { Form, Button, Card, ListGroup, Spinner} from 'react-bootstrap';
 import axios from 'axios';
 
 const api = axios.create({
