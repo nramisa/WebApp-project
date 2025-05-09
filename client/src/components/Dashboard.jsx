@@ -1,22 +1,55 @@
+// client/src/components/Dashboard.jsx
+
 import React, { useEffect, useState } from 'react';
 import { Container, Card, ListGroup, Row, Col, Alert } from 'react-bootstrap';
-// import styles from '../styles/Analysis.module.css';  ← removed since unused
+import axios from 'axios';
+
+// axios instance with JWT from localStorage
+const API = axios.create({
+  baseURL: process.env.REACT_APP_API_URL,
+});
+API.interceptors.request.use(cfg => {
+  const token = localStorage.getItem('token');
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
+
+// Optional: compute an overall score based on your feedback schema
+function computeScore({ structure, marketFit, readiness }) {
+  // simple example: count non-empty sections / 3 * 100
+  let count = 0;
+  if (structure) count++;
+  if (marketFit) count++;
+  if (readiness) count++;
+  return Math.round((count / 3) * 100);
+}
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
-  const [analyses, setAnalyses] = useState([]);
+  const [user,      setUser]     = useState(null);
+  const [analyses,  setAnalyses] = useState([]);
+  const [loading,   setLoading]  = useState(true);
+  const [error,     setError]    = useState('');
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    const mockAnalyses = [
-      { id: 1, date: '2024-05-01', score: 82, summary: 'Strong team section but needs financial projections' },
-      { id: 2, date: '2024-04-15', score: 75, summary: 'Good problem identification but lacks competitor analysis' }
-    ];
-    setUser(userData);
-    setAnalyses(mockAnalyses);
+    // load profile
+    const u = JSON.parse(localStorage.getItem('user'));
+    if (u) setUser(u);
+
+    // fetch history
+    API.get('/api/history')
+      .then(({ data }) => {
+        setAnalyses(data); // expects array of Analysis docs
+      })
+      .catch(err => {
+        console.error('History fetch error:', err);
+        setError('Could not load your analysis history.');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!user) return <Alert variant="info">Loading dashboard...</Alert>;
+  if (!user)    return <Alert variant="info">Loading profile…</Alert>;
+  if (loading)  return <Alert variant="info">Loading history…</Alert>;
+  if (error)    return <Alert variant="danger">{error}</Alert>;
 
   return (
     <Container className="my-5">
@@ -31,22 +64,26 @@ const Dashboard = () => {
             </Card.Body>
           </Card>
         </Col>
-        
+
         <Col md={8}>
           <Card className="shadow-sm">
             <Card.Body>
               <h3 className="mb-4">Recent Analyses</h3>
+
               {analyses.length > 0 ? (
                 <ListGroup variant="flush">
-                  {analyses.map(analysis => (
-                    <ListGroup.Item key={analysis.id} className="py-3">
+                  {analyses.map(a => (
+                    <ListGroup.Item key={a._id} className="py-3">
                       <div className="d-flex justify-content-between">
                         <div>
-                          <h5>{analysis.date}</h5>
-                          <p className="mb-0 text-muted">{analysis.summary}</p>
+                          <h5>{new Date(a.uploadedAt).toLocaleDateString()}</h5>
+                          <p className="mb-1"><strong>File:</strong> {a.filename}</p>
+                          <p className="mb-0 text-muted">
+                            {a.feedback.structure}
+                          </p>
                         </div>
                         <div className="text-danger fw-bold fs-4">
-                          {analysis.score}%
+                          {computeScore(a.feedback)}%
                         </div>
                       </div>
                     </ListGroup.Item>
@@ -64,4 +101,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
