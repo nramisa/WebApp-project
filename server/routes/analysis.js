@@ -1,5 +1,3 @@
-// server/routes/analysis.js
-
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
@@ -10,20 +8,22 @@ const { XMLParser } = require('fast-xml-parser');
 const { OpenAI } = require('openai');
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,       // or OPENAI_API_KEY if you’re using OpenAI’s endpoint
-  baseURL: 'https://openrouter.ai/api/v1',      // adjust if needed
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max per file
 });
 
-// Helper: extract text from PDF files
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+});
+
 async function extractTextFromPDF(filePath) {
   const buffer = fs.readFileSync(filePath);
   const data = await pdfParse(buffer);
   return data.text;
 }
 
-// Helper: extract text from PPTX files
 async function extractTextFromPPTX(filePath) {
   const directory = await unzipper.Open.file(filePath);
   const parser = new XMLParser();
@@ -32,20 +32,17 @@ async function extractTextFromPPTX(filePath) {
   for (const file of directory.files) {
     if (file.path.startsWith('ppt/slides/slide') && file.path.endsWith('.xml')) {
       const content = await file.buffer();
-      const slideObj = parser.parse(content);
+      const slideText = parser.parse(content);
       const texts = [];
 
       (function walk(node) {
         if (typeof node === 'object') {
           for (const key in node) {
-            if (key === 'a:t') {
-              texts.push(node[key]);
-            } else {
-              walk(node[key]);
-            }
+            if (key === 'a:t') texts.push(node[key]);
+            else walk(node[key]);
           }
         }
-      })(slideObj);
+      })(slideText);
 
       allText += texts.join(' ') + '\n';
     }
@@ -54,54 +51,62 @@ async function extractTextFromPPTX(filePath) {
   return allText;
 }
 
-router.post('/analyze', upload.single('file'), async (req, res) => {
+router.post('/analyze', upload.array('files', 4), async (req, res) => {
   try {
-    // 1) Read & extract text
-    const { path: filePath, originalname } = req.file;
-    const ext = path.extname(originalname).toLowerCase();
-    let textContent = '';
+    const results = [];
 
-    if (ext === '.pdf') {
-      textContent = await extractTextFromPDF(filePath);
-    } else if (ext === '.pptx') {
-      textContent = await extractTextFromPPTX(filePath);
-    } else {
-      // cleanup
-      fs.unlinkSync(filePath);
-      return res.status(400).json({ error: 'Unsupported file type. Only PDF and PPTX allowed.' });
+    for (const fileObj of req.files) {
+      const { path: fp, originalname } = fileObj;
+      const ext = path.extname(originalname).toLowerCase();
+      let textContent = '';
+
+      try {
+        if (ext === '.pdf') {
+          textContent = await extractTextFromPDF(fp);
+        } else if (ext === '.pptx') {
+          textContent = await extractTextFromPPTX(fp);
+        } else {
+          results.push({ file: originalname, error: 'Unsupported file type' });
+          continue;
+        }
+
+        fs.unlinkSync(fp);
+
+        if (!textContent.trim()) {
+          results.push({ file: originalname, error: 'No readable text found in the file.' });
+          continue;
+        }
+
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: 'You are an expert presentation analyst.' },
+            { role: 'user', content: `Please provide a concise summary and key insights:\n\n${textContent}` },
+          ],
+          max_tokens: 500,
+        });
+
+        const choices = completion.choices || completion.data?.choices || [];
+        if (!choices.length) {
+          results.push({ file: originalname, error: 'No analysis returned by AI.' });
+        } else {
+          results.push({ file: originalname, analysis: choices[0].message?.content ?? String(choices[0]) });
+        }
+
+      } catch (err) {
+        console.error(`Error processing file ${originalname}:`, err);
+        results.push({
+          file: originalname,
+          error: err?.error?.message || 'An internal error occurred while analyzing this file.',
+        });
+      }
     }
 
-    // remove the uploaded file
-    fs.unlinkSync(filePath);
+    res.json({ results });
 
-    if (!textContent.trim()) {
-      return res.status(400).json({ error: 'No readable text found in the file.' });
-    }
-
-    // 2) Send to AI and log raw response
-    const completion = await openai.chat.completions.create({
-      model: 'openai/gpt-4',
-      messages: [{
-        role: 'user',
-        content: `Provide a concise summary and key insights of this content:\n\n${textContent}`,
-      }],
-    });
-    console.log('🔹 OpenAI raw response:', completion);
-
-    // 3) Defensive guard: ensure we have choices
-    const choices = completion.choices || completion.data?.choices;
-    if (!Array.isArray(choices) || choices.length === 0) {
-      console.error('❌ AI API returned no choices:', completion);
-      return res.status(502).json({ error: 'AI service did not return any analysis.' });
-    }
-
-    // 4) Safely extract analysis text
-    const analysisText = choices[0].message?.content ?? String(choices[0]);
-    res.json({ analysis: analysisText });
-
-  } catch (error) {
-    console.error('🔥 Analysis error:', error);
-    res.status(500).json({ error: 'An error occurred while analyzing the file.' });
+  } catch (err) {
+    console.error('🔥 Batch analysis error:', err);
+    res.status(500).json({ error: 'Internal server error during batch analysis.' });
   }
 });
 
