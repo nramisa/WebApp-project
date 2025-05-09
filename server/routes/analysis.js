@@ -1,3 +1,5 @@
+// server/routes/analysis.js
+
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
@@ -9,21 +11,19 @@ const { OpenAI } = require('openai');
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
-
-// ✅ OpenRouter setup (NOT OpenAI)
 const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,       // or OPENAI_API_KEY if you’re using OpenAI’s endpoint
+  baseURL: 'https://openrouter.ai/api/v1',      // adjust if needed
 });
 
-// Extract text from PDF
+// Helper: extract text from PDF files
 async function extractTextFromPDF(filePath) {
   const buffer = fs.readFileSync(filePath);
   const data = await pdfParse(buffer);
   return data.text;
 }
 
-// Extract text from PPTX (ignore images, extract only text)
+// Helper: extract text from PPTX files
 async function extractTextFromPPTX(filePath) {
   const directory = await unzipper.Open.file(filePath);
   const parser = new XMLParser();
@@ -32,22 +32,21 @@ async function extractTextFromPPTX(filePath) {
   for (const file of directory.files) {
     if (file.path.startsWith('ppt/slides/slide') && file.path.endsWith('.xml')) {
       const content = await file.buffer();
-      const slideText = parser.parse(content);
+      const slideObj = parser.parse(content);
       const texts = [];
 
-      const extractTextRecursively = (node) => {
+      (function walk(node) {
         if (typeof node === 'object') {
           for (const key in node) {
             if (key === 'a:t') {
               texts.push(node[key]);
             } else {
-              extractTextRecursively(node[key]);
+              walk(node[key]);
             }
           }
         }
-      };
+      })(slideObj);
 
-      extractTextRecursively(slideText);
       allText += texts.join(' ') + '\n';
     }
   }
@@ -55,11 +54,11 @@ async function extractTextFromPPTX(filePath) {
   return allText;
 }
 
-// Main analysis route
 router.post('/analyze', upload.single('file'), async (req, res) => {
   try {
-    const filePath = req.file.path;
-    const ext = path.extname(req.file.originalname).toLowerCase();
+    // 1) Read & extract text
+    const { path: filePath, originalname } = req.file;
+    const ext = path.extname(originalname).toLowerCase();
     let textContent = '';
 
     if (ext === '.pdf') {
@@ -67,29 +66,38 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     } else if (ext === '.pptx') {
       textContent = await extractTextFromPPTX(filePath);
     } else {
+      // cleanup
       fs.unlinkSync(filePath);
-      return res.status(400).json({ error: 'Unsupported file type. Only PDF and PPTX are allowed.' });
+      return res.status(400).json({ error: 'Unsupported file type. Only PDF and PPTX allowed.' });
     }
 
-    fs.unlinkSync(filePath); // Delete temp file
+    // remove the uploaded file
+    fs.unlinkSync(filePath);
 
     if (!textContent.trim()) {
       return res.status(400).json({ error: 'No readable text found in the file.' });
     }
 
-    // Send prompt to OpenRouter (e.g., GPT-4 or Claude-3)
+    // 2) Send to AI and log raw response
     const completion = await openai.chat.completions.create({
-      model: "openai/gpt-4", // or try "anthropic/claude-3-opus" etc.
-      messages: [
-        {
-          role: "user",
-          content: `Give a high-level summary and analysis of this presentation content:\n\n${textContent}`,
-        },
-      ],
+      model: 'openai/gpt-4',
+      messages: [{
+        role: 'user',
+        content: `Provide a concise summary and key insights of this content:\n\n${textContent}`,
+      }],
     });
+    console.log('🔹 OpenAI raw response:', completion);
 
-    const analysis = completion.choices[0].message.content;
-    res.json({ analysis });
+    // 3) Defensive guard: ensure we have choices
+    const choices = completion.choices || completion.data?.choices;
+    if (!Array.isArray(choices) || choices.length === 0) {
+      console.error('❌ AI API returned no choices:', completion);
+      return res.status(502).json({ error: 'AI service did not return any analysis.' });
+    }
+
+    // 4) Safely extract analysis text
+    const analysisText = choices[0].message?.content ?? String(choices[0]);
+    res.json({ analysis: analysisText });
 
   } catch (error) {
     console.error('🔥 Analysis error:', error);
