@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 import '../styles/auth.css';
 
 const API_BASE = process.env.REACT_APP_API_URL;
 
 const Login = ({ setIsAuthenticated }) => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔥 Login handleSubmit', formData);
     setLoading(true);
     setError('');
 
@@ -20,49 +24,60 @@ const Login = ({ setIsAuthenticated }) => {
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Login failed');
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
 
+      // store token & user
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('isAuthenticated', 'true');
       setIsAuthenticated(true);
       navigate('/dashboard');
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <div className="auth-header">
-          <h2>Welcome Back</h2>
-          <p>Sign in to continue to PitchIn</p>
-        </div>
+        <h2>Welcome Back</h2>
+        <p>Sign in to continue to PitchIn</p>
         {error && <Alert variant="danger">{error}</Alert>}
-        <Form onSubmit={handleSubmit} className="auth-form">
-          <Form.Group className="mb-3">
-            <Form.Label>Email Address</Form.Label>
-            <Form.Control type="email" required value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-          </Form.Group>
-          <Form.Group className="mb-4">
-            <Form.Label>Password</Form.Label>
-            <Form.Control type="password" required value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-          </Form.Group>
-          <Button disabled={loading} type="submit" variant="primary">
-            {loading ? 'Signing In...' : 'Sign In'}
-          </Button>
-          <div className="auth-footer mt-3">
-            Don’t have an account? <Link to="/signup">Create Account</Link>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="mb-3">
+            <label>Email Address</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+            />
           </div>
-        </Form>
+          <div className="mb-3">
+            <label>Password</label>
+            <input
+              type="password"
+              required
+              value={formData.password}
+              onChange={e => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+          <button disabled={loading} type="submit" className="btn btn-primary">
+            {loading ? 'Signing In…' : 'Sign In'}
+          </button>
+        </form>
+        <div className="auth-footer mt-3">
+          Don’t have an account? <Link to="/signup">Create Account</Link>
+        </div>
       </div>
     </div>
   );
