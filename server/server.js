@@ -8,6 +8,8 @@ const analysisRoutes = require('./routes/analysis');
 const modelsRoutes   = require('./routes/models');
 const historyRoutes  = require('./routes/history');
 const verifyRoutes   = require('./routes/verify'); // ✅ Added verification route
+const investorRoutes = require('./routes/investorQA');
+const marketRoutes   = require('./routes/marketValidation');
 
 const app = express();
 app.use(cors());
@@ -27,6 +29,8 @@ app.use('/api/auth/verify', verifyRoutes); // ✅ Email verification link
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/models', modelsRoutes); 
 app.use('/api/history', historyRoutes);
+app.use('/api/investor-qa', investorRoutes);
+app.use('/api/market-validate', marketRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
