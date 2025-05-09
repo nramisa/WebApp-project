@@ -12,17 +12,17 @@ const Analysis = require('../models/Analysis');
 const router = express.Router();
 const upload = multer({ limits: { fileSize: 25 * 1024 * 1024 } }); // 25 MB
 
-// 1) Initialize OpenAI client against OpenRouter
+// Init OpenRouter client
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
   defaultHeaders: {
-    'HTTP-Referer': 'https://yourdomain.com',  // change if needed
+    'HTTP-Referer': 'https://yourdomain.com',
     'X-Title': 'PitchIn App'
   }
 });
 
-// helper: extract text from PPTX XML
+// helper: extract PPTX text
 function extractText(node) {
   if (typeof node === 'string') return node;
   if (Array.isArray(node))  return node.map(extractText).join(' ');
@@ -53,21 +53,21 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       const slides = dir.files.filter(f => /ppt\/slides\/slide\d+\.xml$/.test(f.path));
       const parser = new XMLParser({ ignoreAttributes: false });
       for (let s of slides) {
-        const buffer = await s.buffer();
-        text += extractText(parser.parse(buffer.toString())) + '\n\n';
+        const buf = await s.buffer();
+        text += extractText(parser.parse(buf.toString())) + '\n\n';
       }
     } else {
       return res.status(400).json({ message: 'Unsupported file type. Use PDF or PPTX.' });
     }
 
-    // 2) Truncate to ~6000 chars to save tokens
+    // truncate for token savings
     const MAX_CHARS = 6000;
     if (text.length > MAX_CHARS) {
       console.log(`✂️ Truncate text ${text.length}→${MAX_CHARS}`);
       text = text.slice(0, MAX_CHARS);
     }
 
-    // 3) Build prompt
+    // build prompt
     const prompt = `
 You are an expert at startup pitches. Analyze the following text and give feedback in three sections:
 1) Structure
@@ -82,16 +82,16 @@ ${text}
 
     console.log(`🚀 Calling OpenRouter Qwen3 with prompt length ${prompt.length}`);
 
-    // 4) Call the free model
+    // **correct** model ID
     const completion = await openai.chat.completions.create({
-      model:    'qwen3-235b-a22b',
+      model:    'qwen-3-235b-a22b',
       messages: [{ role: 'system', content: prompt }]
     });
 
     const contentStr = completion.choices[0].message.content;
     const parts      = contentStr.split(/\n?\d\)\s*/).slice(1);
 
-    // 5) Persist
+    // persist
     const analysis = await Analysis.create({
       user:     req.userId,
       filename: req.file.originalname,
@@ -106,14 +106,9 @@ ${text}
 
   } catch (err) {
     console.error('🔥 Analysis error:', err);
-
-    // if you somehow burn through Qwen’s 12.8B tokens/wk
     if (err.code === 'insufficient_quota' || err.status === 429) {
-      return res.status(429).json({
-        message: 'Free model quota exhausted—please wait before retrying.'
-      });
+      return res.status(429).json({ message: 'Free model quota exhausted—please wait.' });
     }
-
     res.status(500).json({ message: err.message || 'Analysis failed' });
   }
 });
