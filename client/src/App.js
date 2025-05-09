@@ -70,7 +70,7 @@ function App() {
     }
 
     try {
-      const res = await api.post('/api/analysis/upload', formData);
+      const res = await api.post('/api/analysis/analyze', formData);
       console.log('✅ Upload success, server responded with:', res.data);
       setAnalysis(res.data);
     } catch (err) {
