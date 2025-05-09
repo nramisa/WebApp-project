@@ -5,6 +5,11 @@ const jwt      = require('jsonwebtoken');
 const User     = require('../models/User');
 const router   = express.Router();
 
+const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
+const expiresIn = isNaN(Number(rawExpiry)) 
+  ? rawExpiry 
+  : Number(rawExpiry);
+
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
@@ -18,9 +23,11 @@ router.post('/signup', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await User.create({ name, email, passwordHash });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN
-    });
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn }
+    );
 
     res.json({
       token,
@@ -45,9 +52,11 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN
-    });
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn }
+    );
 
     res.json({
       token,
