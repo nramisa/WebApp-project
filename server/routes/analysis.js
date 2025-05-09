@@ -9,41 +9,36 @@ const unzipper      = require('unzipper');
 const { XMLParser } = require('fast-xml-parser');
 const { OpenAI }    = require('openai');
 
-// auth middleware that sets req.userId from JWT
-const auth          = require('../middleware/auth');
-// Mongoose model for storing analyses
-const AnalysisMdl   = require('../models/Analysis');
+const auth        = require('../middleware/auth');
+const AnalysisMdl = require('../models/Analysis');
 
 const router = express.Router();
 
-// Multer config: store in /uploads, max file size 25 MB
+// ↪️ Accept up to 4 files, each ≤25 MB, under the field name “files”
 const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 25 * 1024 * 1024 },
-});
+}).array('files', 4);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-// Helper: extract text from PDF
 async function extractTextFromPDF(filePath) {
   const buffer = fs.readFileSync(filePath);
   const { text } = await pdfParse(buffer);
   return text;
 }
 
-// Helper: extract text from PPTX
 async function extractTextFromPPTX(filePath) {
-  const directory = await unzipper.Open.file(filePath);
+  const dir = await unzipper.Open.file(filePath);
   const parser = new XMLParser();
   let allText = '';
-
-  for (const file of directory.files) {
+  for (const file of dir.files) {
     if (file.path.startsWith('ppt/slides/slide') && file.path.endsWith('.xml')) {
-      const xmlBuffer = await file.buffer();
-      const slideObj = parser.parse(xmlBuffer);
+      const xml = await file.buffer();
+      const slideObj = parser.parse(xml);
       const texts = [];
       (function walk(node) {
         if (node && typeof node === 'object') {
@@ -56,14 +51,12 @@ async function extractTextFromPPTX(filePath) {
       allText += texts.join(' ') + '\n';
     }
   }
-
   return allText;
 }
 
-// Optional parser: split the AI’s raw text into your schema fields
+// Simple splitter: first third → structure, next → marketFit, last → readiness
 function parseFeedback(raw) {
-  // e.g. assume raw is three sections separated by headings
-  const parts = raw.split(/\n-{3,}\n/).map(s => s.trim());
+  const parts = raw.split('\n\n').filter(p => p.trim());
   return {
     structure: parts[0] || '',
     marketFit: parts[1] || '',
@@ -74,57 +67,91 @@ function parseFeedback(raw) {
 router.post(
   '/analyze',
   auth,
-  upload.single('file'),
+  (req, res, next) => upload(req, res, err => err ? next(err) : next()),
   async (req, res) => {
     try {
-      const { path: fp, originalname } = req.file;
-      const ext = path.extname(originalname).toLowerCase();
-      let textContent = '';
+      if (!req.files || !req.files.length) {
+        return res.status(400).json({ error: 'No files uploaded under field "files".' });
+      }
 
-      if (ext === '.pdf') {
-        textContent = await extractTextFromPDF(fp);
-      } else if (ext === '.pptx') {
-        textContent = await extractTextFromPPTX(fp);
-      } else {
+      const results = [];
+
+      for (const fileObj of req.files) {
+        const { path: fp, originalname } = fileObj;
+        const ext = path.extname(originalname).toLowerCase();
+        let text = '';
+
+        try {
+          if (ext === '.pdf') {
+            text = await extractTextFromPDF(fp);
+          } else if (ext === '.pptx') {
+            text = await extractTextFromPPTX(fp);
+          } else {
+            throw new Error('Unsupported file type');
+          }
+        } catch (e) {
+          results.push({ file: originalname, error: e.message });
+          fs.unlinkSync(fp);
+          continue;
+        }
+
         fs.unlinkSync(fp);
-        return res.status(400).json({ error: 'Unsupported file type. Only PDF and PPTX allowed.' });
+
+        if (!text.trim()) {
+          results.push({ file: originalname, error: 'No readable text found.' });
+          continue;
+        }
+
+        // Ask the AI
+        let completion;
+        try {
+          completion = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              { role: 'system', content: 'You are an expert presentation analyst.' },
+              { role: 'user', content: `Analyze this presentation:\n\n${text}` }
+            ],
+            max_tokens: 500,
+          });
+        } catch (apiErr) {
+          // handle insufficient credits
+          if (apiErr?.error?.code === 402) {
+            results.push({
+              file: originalname,
+              error: 'Insufficient credits. Please shorten or split the file.'
+            });
+            continue;
+          }
+          throw apiErr;
+        }
+
+        const aiText = completion.choices?.[0]?.message?.content;
+        if (!aiText) {
+          results.push({ file: originalname, error: 'AI returned no analysis.' });
+          continue;
+        }
+
+        // Parse & save
+        const feedback = parseFeedback(aiText);
+        const saved = await AnalysisMdl.create({
+          user:       req.userId,
+          filename:   originalname,
+          uploadedAt: new Date(),
+          feedback,
+        });
+
+        results.push({ file: originalname, analysis: saved });
       }
 
-      fs.unlinkSync(fp);
-      if (!textContent.trim()) {
-        return res.status(400).json({ error: 'No readable text found in the file.' });
-      }
-
-      // Send to AI
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: 'You are an expert presentation analyst.' },
-          { role: 'user', content: `Analyze this presentation:\n\n${textContent}` },
-        ],
-        max_tokens: 500,
-      });
-
-      const aiText = completion.choices?.[0]?.message?.content;
-      if (!aiText) {
-        return res.status(502).json({ error: 'AI did not return any analysis.' });
-      }
-
-      // Parse and save feedback
-      const feedback = parseFeedback(aiText);
-      const saved = await AnalysisMdl.create({
-        user:       req.userId,
-        filename:   originalname,
-        uploadedAt: new Date(),
-        feedback,  
-      });
-
-      // Return the saved doc
-      res.json({ analysis: saved });
+      res.json({ results });
 
     } catch (err) {
-      console.error('🔥 Analysis error:', err);
-      res.status(500).json({ error: 'Internal error during analysis.' });
+      if (err instanceof multer.MulterError) {
+        // e.g. file too large, unexpected field, etc.
+        return res.status(400).json({ error: err.message });
+      }
+      console.error('🔥 Analysis route error:', err);
+      res.status(500).json({ error: 'Internal server error during analysis.' });
     }
   }
 );
