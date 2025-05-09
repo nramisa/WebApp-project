@@ -1,19 +1,37 @@
-const express            = require('express');
-const bcrypt             = require('bcryptjs');
-const jwt                = require('jsonwebtoken');
-const User               = require('../models/User');
-const { sendVerificationEmail } = require('../utils/mailer');
-const router             = express.Router();
+const express  = require('express');
+const bcrypt   = require('bcryptjs');
+const jwt      = require('jsonwebtoken');
+const User     = require('../models/User');
+const axios    = require('axios');
 
+const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
 const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
+
+// ✅ Function to validate email using MailboxLayer
+async function isEmailValid(email) {
+  const apiKey = process.env.MAILBOXLAYER_API_KEY;
+  const url = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
+
+  try {
+    const { data } = await axios.get(url);
+    return data.format_valid && data.smtp_check; // only accept real + reachable emails
+  } catch (err) {
+    console.error('Email validation failed:', err.message);
+    return false; // treat as invalid if the API fails
+  }
+}
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    if (!name||!email||!password)
+    if (!name || !email || !password)
       return res.status(400).json({ message: 'Please enter all fields' });
+
+    // ✅ Check email validity
+    const valid = await isEmailValid(email);
+    if (!valid) return res.status(400).json({ message: 'Please use a real, valid email address' });
 
     if (await User.findOne({ email }))
       return res.status(400).json({ message: 'Email already in use' });
@@ -21,15 +39,15 @@ router.post('/signup', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await User.create({ name, email, passwordHash });
 
-    // send verification email
-    await sendVerificationEmail(user.email, user.verificationToken);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
     res.json({
-      message: 'Signup successful! Please check your email to verify your account.'
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message:'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -37,22 +55,24 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email||!password)
+    if (!email || !password)
       return res.status(400).json({ message: 'Please enter all fields' });
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-    if (!user.isVerified)
-      return res.status(403).json({ message: 'Please verify your email first' });
 
-    if (!await bcrypt.compare(password, user.passwordHash))
-      return res.status(400).json({ message: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message:'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
