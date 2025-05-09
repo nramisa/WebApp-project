@@ -3,40 +3,34 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Alert } from 'react-bootstrap';
 import '../styles/auth.css';
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = process.env.REACT_APP_API_URL; // e.g. https://webapp-project-rxn5.onrender.com
 
 const Login = ({ setIsAuthenticated }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error,    setError]     = useState('');
+  const [loading,  setLoading]   = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('🔥 Login handleSubmit', formData);
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // store token & user
+      // ✅ store JWT & flag
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('isAuthenticated', 'true');
       setIsAuthenticated(true);
+
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
@@ -84,3 +78,4 @@ const Login = ({ setIsAuthenticated }) => {
 };
 
 export default Login;
+
