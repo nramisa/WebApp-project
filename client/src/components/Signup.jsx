@@ -6,38 +6,31 @@ import '../styles/auth.css';
 const API_BASE = process.env.REACT_APP_API_URL;
 
 const Signup = ({ setIsAuthenticated }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error,    setError]     = useState('');
+  const [loading,  setLoading]   = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('🔥 Signup handleSubmit', formData);
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/signup`, {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Signup failed');
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
-      }
-
-      // store token & user
+      // ✅ store JWT & flag
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('isAuthenticated', 'true');
       setIsAuthenticated(true);
+
       navigate('/dashboard');
     } catch (err) {
       console.error('Signup error:', err);
@@ -53,7 +46,6 @@ const Signup = ({ setIsAuthenticated }) => {
         <h2>Get Started</h2>
         <p>Create your PitchIn account</p>
         {error && <Alert variant="danger">{error}</Alert>}
-        {/* Plain HTML form to guarantee onSubmit fires */}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="mb-3">
             <label>Full Name</label>
