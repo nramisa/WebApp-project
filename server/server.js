@@ -1,16 +1,18 @@
 require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express    = require('express');
+const mongoose   = require('mongoose');
+const cors       = require('cors');
 
-const authRoutes = require('./routes/auth');
+const authRoutes     = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
-const historyRoutes = require('./routes/history');
+const historyRoutes  = require('./routes/history');
+const verifyRoutes   = require('./routes/verify'); // ✅ Added verification route
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check
 app.get('/api/health', (req, res) => {
   return res.json({
     status: 'OK',
@@ -18,18 +20,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount your routers under /api
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/verify', verifyRoutes); // ✅ Email verification link
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/history', historyRoutes);
 
-// Global error handler
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Server error' });
 });
 
-// Connect to MongoDB Atlas & start
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
