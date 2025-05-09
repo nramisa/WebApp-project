@@ -1,11 +1,11 @@
 const express = require('express');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
+const { PDFDocument } = require('pdf-lib'); // Used for extracting images from PDF
+const pdf2pic = require("pdf2pic"); // To convert PDF to images
 const unzipper = require('unzipper');
-const { PDFDocument } = require('pdf-lib');
 const { XMLParser } = require('fast-xml-parser');
 const OpenAI = require('openai');
-
 const auth = require('../middleware/auth');
 const Analysis = require('../models/Analysis');
 
@@ -26,34 +26,26 @@ const openai = new OpenAI({
 function extractText(node) {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join(' ');
-  if (typeof node === 'object') return Object.values(node).map(extractText).join(' ');
+  if (typeof node === 'object')
+    return Object.values(node).map(extractText).join(' ');
   return '';
 }
 
-// helper: extract images from PDF
+// Extract images from a PDF
 async function extractImagesFromPDF(pdfBuffer) {
   const pdfDoc = await PDFDocument.load(pdfBuffer);
   const images = [];
-  for (let pageIndex = 0; pageIndex < pdfDoc.getPages().length; pageIndex++) {
-    const page = pdfDoc.getPages()[pageIndex];
-    const imagesOnPage = page.getImages();
-    imagesOnPage.forEach(img => {
-      images.push(img);
+
+  for (let i = 0; i < pdfDoc.getPages().length; i++) {
+    const page = pdfDoc.getPages()[i];
+    const imageObjects = page.node.Annots ? page.node.Annots : [];
+    imageObjects.forEach((image) => {
+      // Do something with image like saving it to the disk or adding it to the images array
+      images.push(image);
     });
   }
-  return images;
-}
 
-// helper: extract images from PPTX
-async function extractImagesFromPPTX(pptxBuffer) {
-  const dir = await unzipper.Open.buffer(pptxBuffer);
-  const imageFiles = dir.files.filter(f => /ppt\/media\//.test(f.path));
-  const imageBuffers = [];
-  for (let file of imageFiles) {
-    const imgBuffer = await file.buffer();
-    imageBuffers.push(imgBuffer);
-  }
-  return imageBuffers;
+  return images;
 }
 
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
@@ -62,16 +54,22 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
+    // parse PDF or PPTX
     let text = '';
     let images = [];
     const name = req.file.originalname.toLowerCase();
     const isPdf = req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(name);
-    const isPptx = req.file.mimetype === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || /\.pptx$/i.test(name);
+    const isPptx = req.file.mimetype ===
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      /\.pptx$/i.test(name);
 
     if (isPdf) {
+      // Extract text from PDF
       const data = await pdfParse(req.file.buffer);
       text = data.text;
-      images = await extractImagesFromPDF(req.file.buffer); // Extract images from PDF
+
+      // Extract images from PDF
+      images = await extractImagesFromPDF(req.file.buffer);
     } else if (isPptx) {
       const dir = await unzipper.Open.buffer(req.file.buffer);
       const slides = dir.files.filter(f => /ppt\/slides\/slide\d+\.xml$/.test(f.path));
@@ -80,13 +78,13 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
         const buf = await s.buffer();
         text += extractText(parser.parse(buf.toString())) + '\n\n';
       }
-      images = await extractImagesFromPPTX(req.file.buffer); // Extract images from PPTX
     } else {
       return res.status(400).json({ message: 'Unsupported file type. Use PDF or PPTX.' });
     }
 
-    console.log('📝 Extracted text:', text);
-    console.log('🖼️ Extracted images:', images);
+    // Log the raw text and images (for debugging)
+    console.log('📝 Extracted text from file:\n', text);
+    console.log('📸 Extracted images:', images);
 
     // Validate the extracted text
     if (!text || text.trim().length < 50) {
@@ -95,14 +93,16 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       });
     }
 
+    // truncate for token savings
     const MAX_CHARS = 6000;
     if (text.length > MAX_CHARS) {
       console.log(`✂️ Truncate text ${text.length} → ${MAX_CHARS}`);
       text = text.slice(0, MAX_CHARS);
     }
 
+    // build prompt
     const prompt = `
-You are an expert at startup pitches. Analyze the following text and any relevant images, then provide feedback in three sections:
+You are an expert at startup pitches. Analyze the following text and give feedback in three sections:
 1) Structure
 2) Market Fit
 3) Investor Readiness
@@ -111,15 +111,13 @@ Text:
 """
 ${text}
 """
-
-Images:
-Please describe any relevant images in the context of the pitch (if applicable).
 `;
 
     console.log(`🚀 Calling OpenRouter Qwen3 with prompt length ${prompt.length}`);
 
+    // AI completion
     const completion = await openai.chat.completions.create({
-      model: 'google/gemma-3-27b-it:free', // or another model
+      model: 'qwen/qwen3-235b-a22b:free',
       messages: [{ role: 'system', content: prompt }]
     });
 
@@ -133,13 +131,14 @@ Please describe any relevant images in the context of the pitch (if applicable).
 
     const parts = contentStr.split(/\n?\d\)\s*/).slice(1);
 
+    // persist
     const analysis = await Analysis.create({
       user: req.userId,
       filename: req.file.originalname,
       feedback: {
-        structure: parts[0]?.trim() || 'No structure feedback available.',
-        marketFit: parts[1]?.trim() || 'No market fit feedback available.',
-        readiness: parts[2]?.trim() || 'No investor readiness feedback available.'
+        structure: parts[0]?.trim() || '',
+        marketFit: parts[1]?.trim() || '',
+        readiness: parts[2]?.trim() || ''
       }
     });
 
@@ -155,3 +154,4 @@ Please describe any relevant images in the context of the pitch (if applicable).
 });
 
 module.exports = router;
+
