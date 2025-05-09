@@ -5,6 +5,7 @@ const cors       = require('cors');
 
 const authRoutes     = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
+const modelsRoutes   = require('./routes/models');
 const historyRoutes  = require('./routes/history');
 const verifyRoutes   = require('./routes/verify'); // ✅ Added verification route
 
@@ -24,6 +25,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/verify', verifyRoutes); // ✅ Email verification link
 app.use('/api/analysis', analysisRoutes);
+app.use('/api/models', modelsRoutes); 
 app.use('/api/history', historyRoutes);
 
 // Error handler
