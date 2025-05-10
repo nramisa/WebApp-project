@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Card, Tabs, Tab, Table, Alert, Spinner
+  Container, Card, Tabs, Tab, Table, Alert, Spinner, Row, Col, Badge
 } from 'react-bootstrap';
 import axios from 'axios';
 import styles from '../styles/dashboardStyles.module.css';
@@ -41,21 +41,48 @@ export default function AdminDashboard() {
     })();
   }, []);
 
-  if (loading) return <Spinner animation="border" />;
-  if (error)   return <Alert variant="danger" className="m-3">{error}</Alert>;
+  if (loading) return <div className="text-center mt-5"><Spinner animation="border" variant="danger" /></div>;
+  if (error) return <Alert variant="danger" className="m-3">{error}</Alert>;
 
   return (
-    <Container className="my-5">
-      <Card className="shadow-sm">
+    <Container className={styles.dashboardContainer}>
+      <Card className={styles.dashboardCard}>
         <Card.Body>
-          <h3 className="mb-4">Admin Dashboard</h3>
-          <Tabs defaultActiveKey="users">
-            <Tab eventKey="users" title="Users">
-              <Table striped bordered hover size="sm" className="mt-3">
-                <thead><tr><th>Name</th><th>Email</th><th>Startup</th></tr></thead>
+          <div className={styles.headerSection}>
+            <h3 className={styles.dashboardTitle}>Admin Dashboard</h3>
+            <div className={styles.statsRow}>
+              <div className={styles.statBox}>
+                <span>Users</span>
+                <Badge bg="danger" className={styles.statBadge}>{users.length}</Badge>
+              </div>
+              <div className={styles.statBox}>
+                <span>Analyses</span>
+                <Badge bg="danger" className={styles.statBadge}>{analyses.length}</Badge>
+              </div>
+              <div className={styles.statBox}>
+                <span>Q&A Sessions</span>
+                <Badge bg="danger" className={styles.statBadge}>{qa.length}</Badge>
+              </div>
+              <div className={styles.statBox}>
+                <span>Market Checks</span>
+                <Badge bg="danger" className={styles.statBadge}>{market.length}</Badge>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultActiveKey="users" className={styles.dashboardTabs}>
+            <Tab eventKey="users" title="Users" className={styles.tabContent}>
+              <Table hover className={styles.dashboardTable}>
+                <thead className={styles.tableHeader}>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Startup</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {users.map(u => (
-                    <tr key={u._id}>
+                    <tr key={u._id} className={styles.tableRow}>
                       <td>{u.name}</td>
                       <td>{u.email}</td>
                       <td>{u.startupName}</td>
@@ -65,12 +92,18 @@ export default function AdminDashboard() {
               </Table>
             </Tab>
 
-            <Tab eventKey="analyses" title="Pitch Analyses">
-              <Table striped bordered hover size="sm" className="mt-3">
-                <thead><tr><th>User</th><th>File</th><th>Date</th></tr></thead>
+            <Tab eventKey="analyses" title="Pitch Analyses" className={styles.tabContent}>
+              <Table hover className={styles.dashboardTable}>
+                <thead className={styles.tableHeader}>
+                  <tr>
+                    <th>User</th>
+                    <th>File</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {analyses.map(a => (
-                    <tr key={a._id}>
+                    <tr key={a._id} className={styles.tableRow}>
                       <td>{a.user?.name}</td>
                       <td>{a.filename}</td>
                       <td>{new Date(a.uploadedAt).toLocaleDateString()}</td>
@@ -80,12 +113,19 @@ export default function AdminDashboard() {
               </Table>
             </Tab>
 
-            <Tab eventKey="qa" title="Investor Q&A">
-              <Table striped bordered hover size="sm" className="mt-3">
-                <thead><tr><th>User</th><th>Domain</th><th>Stage</th><th>Count</th></tr></thead>
+            <Tab eventKey="qa" title="Investor Q&A" className={styles.tabContent}>
+              <Table hover className={styles.dashboardTable}>
+                <thead className={styles.tableHeader}>
+                  <tr>
+                    <th>User</th>
+                    <th>Domain</th>
+                    <th>Stage</th>
+                    <th>Count</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {qa.map(s => (
-                    <tr key={s._id}>
+                    <tr key={s._id} className={styles.tableRow}>
                       <td>{s.user?.name}</td>
                       <td>{s.domain}</td>
                       <td>{s.fundingStage}</td>
@@ -96,16 +136,23 @@ export default function AdminDashboard() {
               </Table>
             </Tab>
 
-            <Tab eventKey="market" title="Market Validation">
-              <Table striped bordered hover size="sm" className="mt-3">
-                <thead><tr><th>User</th><th>Startup</th><th>Domain</th><th>Score</th></tr></thead>
+            <Tab eventKey="market" title="Market Validation" className={styles.tabContent}>
+              <Table hover className={styles.dashboardTable}>
+                <thead className={styles.tableHeader}>
+                  <tr>
+                    <th>User</th>
+                    <th>Startup</th>
+                    <th>Domain</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {market.map(m => (
-                    <tr key={m._id}>
+                    <tr key={m._id} className={styles.tableRow}>
                       <td>{m.user?.name}</td>
                       <td>{m.startupName}</td>
                       <td>{m.domain}</td>
-                      <td>{m.score}%</td>
+                      <td><Badge bg="danger">{m.score}%</Badge></td>
                     </tr>
                   ))}
                 </tbody>
