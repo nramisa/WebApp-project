@@ -20,20 +20,16 @@ import Upload            from './components/Upload';
 import Analysis          from './components/Analysis';
 import MarketValidation  from './components/MarketValidation';
 import InvestorQA        from './components/InvestorQA';
+import AdminDashboard    from './components/AdminDashboard';
 import Footer            from './components/Footer';
-import AdminDashboard from './components/AdminDashboard';
 
-
-// 1) Create axios instance with baseURL & JWT interceptor
+// Axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL, // e.g. "https://webapp-project-rxn5.onrender.com"
+  baseURL: process.env.REACT_APP_API_URL,
 });
-
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
@@ -48,42 +44,23 @@ function App() {
     setIsAuthenticated(Boolean(auth));
   }, []);
 
-  // 2) Upload handler now accepts single or multiple files
+  // File upload handler...
   const handleUpload = async (fileOrFiles) => {
     const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
     if (!files.length) {
-      alert('Please select one or more files first.');
+      alert('Please select files first.');
       return;
     }
-
     setLoading(true);
     const formData = new FormData();
-
-    files.forEach(file => {
-      console.log('🔹 Selected file:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-      formData.append('files', file);
-    });
-
-    for (let [key, val] of formData.entries()) {
-      console.log('🔸 formData entry:', key, val);
-    }
-
+    files.forEach(f => formData.append('files', f));
     try {
       const res = await api.post('/api/analysis/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      console.log('✅ Upload success, server responded with:', res.data);
-      // server returns { results: [...] }
       setAnalysis(res.data.results);
     } catch (err) {
-      console.error('❌ Upload error object:', err);
-      const status  = err.response?.status;
-      const message = err.response?.data?.error || err.message;
-      alert(`Upload failed (HTTP ${status}): ${message}`);
+      alert(`Upload failed: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -103,66 +80,41 @@ function App() {
         <Route path="/login"  element={<Login setIsAuthenticated={setIsAuthenticated} />} />
 
         {/* Protected */}
-        <Route
-          path="/dashboard"
-          element={
-            isAuthenticated
-              ? <Dashboard />
-              : <Navigate to="/login" replace />
-          }
-        />
+        <Route path="/dashboard" element={
+          isAuthenticated
+            ? <Dashboard />
+            : <Navigate to="/login" replace />
+        }/>
 
-        <Route
-          path="/analyze"
-          element={
-            isAuthenticated
-              ? (
-                <>
-                  <Upload onUpload={handleUpload} loading={loading} />
-                  {analysis && <Analysis data={analysis} />}
-                </>
-              )
-              : <Navigate to="/login" replace />
-          }
-        />
+        <Route path="/analyze" element={
+          isAuthenticated
+            ? <><Upload onUpload={handleUpload} loading={loading} />{analysis && <Analysis data={analysis} />}</>
+            : <Navigate to="/login" replace />
+        }/>
 
-        <Route
-          path="/market"
-          element={
-            isAuthenticated
-              ? <MarketValidation />
-              : <Navigate to="/login" replace />
-          }
-        />
+        <Route path="/market" element={
+          isAuthenticated
+            ? <MarketValidation />
+            : <Navigate to="/login" replace />
+        }/>
 
-        <Route
-          path="/qa"
-          element={
-            isAuthenticated
-              ? <InvestorQA />
-              : <Navigate to="/login" replace />
-          }
-        />
+        <Route path="/qa" element={
+          isAuthenticated
+            ? <InvestorQA />
+            : <Navigate to="/login" replace />
+        }/>
+
+        {/* Admin Panel (before the catch-all) */}
+        <Route path="/admin" element={
+          isAuthenticated && JSON.parse(localStorage.getItem('user')).isAdmin
+            ? <AdminDashboard />
+            : <Navigate to="/" replace />
+        }/>
 
         {/* Fallback */}
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to={isAuthenticated ? '/dashboard' : '/'}
-              replace
-            />
-          }
-        />
-
-        <Route
-          path="/admin"
-          element={
-            isAuthenticated && JSON.parse(localStorage.getItem('user')).isAdmin
-              ? <AdminDashboard />
-              : <Navigate to="/" replace />
-         }
-       />
+        <Route path="*" element={
+          <Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />
+        }/>
       </Routes>
 
       <Footer />
