@@ -12,9 +12,6 @@ const investorRoutes = require('./routes/investorQA');
 const marketRoutes   = require('./routes/marketValidation');
 const adminRoutes    = require('./routes/admin');
 
-// ← ADD THIS:
-const devRoutes       = require('./routes/dev');
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -26,9 +23,6 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// ← MOUNT THE DEV ROUTE FIRST (no auth)
-app.use('/api/dev', devRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes);
