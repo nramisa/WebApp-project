@@ -13,52 +13,16 @@
 }
 
 
-
-
-
 body {
-
-
-    margin: 0;
-
-
-    font-family: 'Inter', sans-serif;
-
-
-    color: var(--dark-text);
-
-
-    line-height: 1.6;
-
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-
-
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
-
-
-
-
 
 .app-container {
-
-
-    max-width: 1200px;
-
-
-    margin: 0 auto;
-
-
-    padding: 2rem;
-
-    flex: 1;
-    padding-bottom: 100px;
-
-
+  flex: 1;
+  padding-bottom: 60px; /* Footer height + extra space */
 }
-
-
 
 
 
@@ -185,31 +149,11 @@ body {
 }
 
 
-
-
-
 .main-footer {
-
-
-    background: #2D2D2D;
-
-
-    color: white;
-
-
-    padding: 2rem 0;
-
-
-    margin-top: auto;
-    position: relative;
-    bottom: 0;
-    width: 100%;
-
-
+  margin-top: auto;
+  position: relative;
+  z-index: 100;
 }
-
-
-
 
 
 .footer-content {
