@@ -7,10 +7,13 @@ const authRoutes     = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
 const modelsRoutes   = require('./routes/models');
 const historyRoutes  = require('./routes/history');
-const verifyRoutes   = require('./routes/verify'); // ✅ Added verification route
+const verifyRoutes   = require('./routes/verify');
 const investorRoutes = require('./routes/investorQA');
 const marketRoutes   = require('./routes/marketValidation');
-const adminRoutes = require('./routes/admin');
+const adminRoutes    = require('./routes/admin');
+
+// ← ADD THIS:
+const devRoutes       = require('./routes/dev');
 
 const app = express();
 app.use(cors());
@@ -24,11 +27,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ← MOUNT THE DEV ROUTE FIRST (no auth)
+app.use('/api/dev', devRoutes);
+
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/auth/verify', verifyRoutes); // ✅ Email verification link
+app.use('/api/auth/verify', verifyRoutes);
 app.use('/api/analysis', analysisRoutes);
-app.use('/api/models', modelsRoutes); 
+app.use('/api/models', modelsRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/investor-qa', investorRoutes);
 app.use('/api/market-validate', marketRoutes);
@@ -50,3 +56,4 @@ mongoose
     );
   })
   .catch(err => console.error('MongoDB connection error:', err));
+
