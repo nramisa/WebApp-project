@@ -1,6 +1,6 @@
 ## Hosted Frontend Prototype:
 [Click to view](https://web-app-project-umber.vercel.app/)
-- Sign Up to view the whole website for now. 
+- Sign Up to view the whole website. 
 
 ## Repo Structure:
 - `client/`: React frontend (hosted on Vercel)
