@@ -5,6 +5,10 @@ import { Link, useNavigate } from 'react-router-dom';
 const PrivateNavbar = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
 
+  // grab the user object from localStorage
+  const stored = localStorage.getItem('user');
+  const user = stored ? JSON.parse(stored) : {};
+
   const handleLogout = () => {
     // clear localStorage and React state
     localStorage.removeItem('isAuthenticated');
@@ -31,6 +35,10 @@ const PrivateNavbar = ({ setIsAuthenticated }) => {
             <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
             <Nav.Link as={Link} to="/market">Market Validation</Nav.Link>
             <Nav.Link as={Link} to="/qa">Investor Q&A</Nav.Link>
+            {/* Admin Panel link only for admins */}
+            {user.isAdmin && (
+              <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>
+            )}
           </Nav>
           <Nav>
             <Nav.Link as={Link} to="/dashboard">
@@ -56,4 +64,3 @@ const PrivateNavbar = ({ setIsAuthenticated }) => {
 };
 
 export default PrivateNavbar;
-
