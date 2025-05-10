@@ -3,6 +3,7 @@ import {
   Container, Card, Tabs, Tab, Table, Alert, Spinner
 } from 'react-bootstrap';
 import axios from 'axios';
+import styles from '../styles/dashboardStyles.module.css';
 
 const api = axios.create({ baseURL: process.env.REACT_APP_API_URL });
 api.interceptors.request.use(cfg => {
