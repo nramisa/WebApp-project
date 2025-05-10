@@ -10,6 +10,7 @@ const historyRoutes  = require('./routes/history');
 const verifyRoutes   = require('./routes/verify'); // ✅ Added verification route
 const investorRoutes = require('./routes/investorQA');
 const marketRoutes   = require('./routes/marketValidation');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use('/api/models', modelsRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/investor-qa', investorRoutes);
 app.use('/api/market-validate', marketRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
