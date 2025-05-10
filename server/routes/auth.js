@@ -8,7 +8,7 @@ const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
 const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
 
-// Function to validate email using MailboxLayer
+// Email validation helper
 async function isEmailValid(email) {
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
   const url = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
@@ -22,7 +22,7 @@ async function isEmailValid(email) {
   }
 }
 
-// POST /api/auth/signup
+// Signup
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -40,14 +40,12 @@ router.post('/signup', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
-    // Return token + full user object including isAdmin
     res.json({
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        startupName: user.startupName || '',
         isAdmin: user.isAdmin || false
       }
     });
@@ -57,7 +55,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
+// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -72,7 +70,6 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
-    // Return token + full user object including isAdmin
     res.json({
       token,
       user: {
@@ -89,4 +86,5 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
 
