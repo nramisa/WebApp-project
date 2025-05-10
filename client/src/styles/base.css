@@ -203,7 +203,7 @@ body {
 
 }
 
-/* Add these styles */
+/* Navbar styles */
 .nav-link-custom {
   color: #DC143C !important;
   font-weight: 700 !important;
@@ -225,7 +225,22 @@ body {
 
 .nav-link-custom:hover {
   transform: translateY(-2px);
-  text-shadow: 0 0 10px rgba(220, 20, 60, 0.3);
+  text-shadow: 0 0 10px rgba(220, 20, 60, 0.4);
+}
+
+.nav-link-custom::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #DC143C;
+  transition: width 0.3s ease;
+}
+
+.nav-link-custom:hover::after {
+  width: 100%;
 }
 
 .nav-link-custom:hover::before {
