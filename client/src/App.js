@@ -21,6 +21,8 @@ import Analysis          from './components/Analysis';
 import MarketValidation  from './components/MarketValidation';
 import InvestorQA        from './components/InvestorQA';
 import Footer            from './components/Footer';
+import AdminDashboard from './components/AdminDashboard';
+
 
 // 1) Create axios instance with baseURL & JWT interceptor
 const api = axios.create({
@@ -152,6 +154,15 @@ function App() {
             />
           }
         />
+
+        <Route
+          path="/admin"
+          element={
+            isAuthenticated && JSON.parse(localStorage.getItem('user')).isAdmin
+              ? <AdminDashboard />
+              : <Navigate to="/" replace />
+         }
+       />
       </Routes>
 
       <Footer />
