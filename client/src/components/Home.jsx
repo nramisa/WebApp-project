@@ -128,67 +128,50 @@ const Home = () => {
   return (
 
 
-    <div className="home-page">
+   <div className="home-page">
+    {/* Hero Section - Update this part */}
+    <div 
+      className="text-white hero"
+      style={{ 
+        background: 'linear-gradient(45deg, #1A1A1A 0%, #DC143C 100%)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      <Container className="py-5 text-center position-relative">
+        {/* Animated gradient text */}
+        <h1 className="display-4 mb-4 fw-bold gradient-text">
+          Transform Your Startup Journey
+        </h1>
+        
+        {/* Animated subtitle */}
+        <p className="lead mb-4 fs-4 text-light opacity-85" style={{ animation: 'fadeInUp 1s ease' }}>
+          AI-powered pitch validation, investor readiness training, and market testing
+        </p>
 
+        {/* Glowing CTA button */}
+        <Button 
+          as={Link} 
+          to="/signup"
+          variant="outline-light" 
+          size="lg" 
+          className="px-5 py-3 rounded-pill btn-hover-glow"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            transition: 'all 0.3s ease'
+          }}
+        >
+          Get Started
+        </Button>
 
-      <div 
-
-
-        className="text-white hero"
-
-
-        style={{ 
-
-
-          background: 'linear-gradient(45deg, #1A1A1A 0%, #DC143C 100%)',
-
-
-        }}
-
-
-      >
-
-
-        <Container className="py-5 text-center">
-
-
-          <h1 className="display-4 mb-4 fw-bold">Transform Your Startup Journey</h1>
-
-
-          <p className="lead mb-4 fs-4">AI-powered pitch validation, investor readiness training, and market testing</p>
-
-
-          <Button 
-
-
-            as={Link} 
-
-
-            to="/signup"
-
-
-            variant="outline-light" 
-
-
-            size="lg" 
-
-
-            className="px-5 py-3 rounded-pill btn-hover"
-
-
-          >
-
-
-            Get Started
-
-
-          </Button>
-
-
-        </Container>
-
-
-      </div>
+        {/* Animated background elements */}
+        <div className="hero-shapes">
+          <div className="shape-1"></div>
+          <div className="shape-2"></div>
+        </div>
+      </Container>
+    </div>
 
 
 
