@@ -11,6 +11,7 @@ import {
   Spinner
 } from 'react-bootstrap';
 import axios from 'axios';
+import styles from '../styles/dashboardStyles.module.css';
 
 // axios instance with JWT interceptor
 const API = axios.create({
