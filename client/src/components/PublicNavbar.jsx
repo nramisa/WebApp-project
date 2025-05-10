@@ -9,8 +9,8 @@ const PublicNavbar = () => (
         PitchIn
       </Navbar.Brand>
       <Nav className="ms-auto">
-        <Nav.Link as={Link} to="/signup" className="mx-2">Sign Up</Nav.Link>
-        <Nav.Link as={Link} to="/login" className="mx-2">Login</Nav.Link>
+        <Nav.Link as={Link} to="/signup" className="nav-link-custom mx-2">Sign Up</Nav.Link>
+        <Nav.Link as={Link} to="/login" className="nav-link-custom mx-2">Login</Nav.Link>
       </Nav>
     </Container>
   </Navbar>
