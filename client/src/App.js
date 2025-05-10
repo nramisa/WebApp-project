@@ -104,9 +104,9 @@ function App() {
             : <Navigate to="/login" replace />
         }/>
 
-        {/* Admin Panel (before the catch-all) */}
+        {/* Admin Panel (safe optional check) */}
         <Route path="/admin" element={
-          isAuthenticated && JSON.parse(localStorage.getItem('user')).isAdmin
+          isAuthenticated && JSON.parse(localStorage.getItem('user'))?.isAdmin
             ? <AdminDashboard />
             : <Navigate to="/" replace />
         }/>
