@@ -8,17 +8,17 @@ const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
 const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
 
-// ✅ Function to validate email using MailboxLayer
+// Function to validate email using MailboxLayer
 async function isEmailValid(email) {
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
   const url = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
 
   try {
     const { data } = await axios.get(url);
-    return data.format_valid && data.smtp_check; // only accept real + reachable emails
+    return data.format_valid && data.smtp_check;
   } catch (err) {
     console.error('Email validation failed:', err.message);
-    return false; // treat as invalid if the API fails
+    return false;
   }
 }
 
@@ -29,7 +29,6 @@ router.post('/signup', async (req, res) => {
     if (!name || !email || !password)
       return res.status(400).json({ message: 'Please enter all fields' });
 
-    // ✅ Check email validity
     const valid = await isEmailValid(email);
     if (!valid) return res.status(400).json({ message: 'Please use a real, valid email address' });
 
@@ -41,9 +40,16 @@ router.post('/signup', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
+    // Return token + full user object including isAdmin
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        startupName: user.startupName || '',
+        isAdmin: user.isAdmin || false
+      }
     });
   } catch (err) {
     console.error(err);
@@ -66,9 +72,16 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
+    // Return token + full user object including isAdmin
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        startupName: user.startupName || '',
+        isAdmin: user.isAdmin || false
+      }
     });
   } catch (err) {
     console.error(err);
@@ -77,3 +90,4 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
