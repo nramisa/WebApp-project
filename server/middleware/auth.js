@@ -16,6 +16,7 @@ module.exports = async function(req, res, next) {
     if (!user) return res.status(401).json({ message: 'User not found' });
 
     req.user = user; // ✅ attach full user object to request
+    req.userId = user._id;   // ✅ add this line for routes expecting userId
     next();
   } catch (err) {
     res.status(401).json({ message: 'Token is not valid' });
