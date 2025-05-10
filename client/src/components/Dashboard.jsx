@@ -120,17 +120,74 @@ const Dashboard = () => {
                   )}
                 </Tab>
 
-                <Tab eventKey="qa" title={
-                  <span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>
-                }>
-                  {/* Similar structure for Q&A tab */}
-                </Tab>
+                {/* Investor Q&A Tab */}
+  <Tab eventKey="qa" title={<span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>}>
+    {loading.qa ? (
+      <div className="text-center py-4"><Spinner animation="border" variant="danger" /></div>
+    ) : error.qa ? (
+      <Alert variant="danger">{error.qa}</Alert>
+    ) : qaHistory.length > 0 ? (
+      <ListGroup variant="flush" className={styles.activityList}>
+        {qaHistory.map(s => (
+          <ListGroup.Item key={s._id} className={styles.listItem}>
+            <div className={styles.itemContent}>
+              <div className={styles.itemMain}>
+                <div className={styles.itemHeader}>
+                  <Badge bg="light" text="dark" className={styles.dateBadge}>
+                    {new Date(s.createdAt).toLocaleDateString()}
+                  </Badge>
+                  <span className={styles.fileName}>{s.domain}</span>
+                </div>
+                <p className={styles.feedbackText}>
+                  {s.questions?.slice(0, 3).join(' | ') || 'No questions'}…
+                </p>
+                <small className="text-secondary">
+                  {s.questions?.length || 0} questions
+                </small>
+              </div>
+            </div>
+          </ListGroup.Item>
+        ))}
+      </ListGroup>
+    ) : (
+      <Alert variant="info" className="mt-3">
+        No Q&A sessions yet
+      </Alert>
+    )}
+  </Tab>
 
-                <Tab eventKey="market" title={
-                  <span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>
-                }>
-                  {/* Similar structure for Market tab */}
-                </Tab>
+  {/* Market Validation Tab */}
+  <Tab eventKey="market" title={<span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>}>
+    {loading.market ? (
+      <div className="text-center py-4"><Spinner animation="border" variant="danger" /></div>
+    ) : error.market ? (
+      <Alert variant="danger">{error.market}</Alert>
+    ) : marketHistory.length > 0 ? (
+      <ListGroup variant="flush" className={styles.activityList}>
+        {marketHistory.map(s => (
+          <ListGroup.Item key={s._id} className={styles.listItem}>
+            <div className={styles.itemContent}>
+              <div className={styles.itemMain}>
+                <div className={styles.itemHeader}>
+                  <Badge bg="light" text="dark" className={styles.dateBadge}>
+                    {new Date(s.createdAt).toLocaleDateString()}
+                  </Badge>
+                  <span className={styles.fileName}>{s.startupName}</span>
+                </div>
+                <p className={styles.feedbackText}>
+                  Score: <strong>{s.score}%</strong> - {s.advice?.substring(0, 100) || 'No advice'}…
+                </p>
+              </div>
+            </div>
+          </ListGroup.Item>
+        ))}
+      </ListGroup>
+    ) : (
+      <Alert variant="info" className="mt-3">
+        No market validations yet
+      </Alert>
+    )}
+  </Tab>
               </Tabs>
             </Card.Body>
           </Card>
