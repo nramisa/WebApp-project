@@ -25,13 +25,13 @@ const PrivateNavbar = ({ setIsAuthenticated }) => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
-            <Nav.Link as={Link} to="/market">Market Validation</Nav.Link>
-            <Nav.Link as={Link} to="/qa">Investor Q&A</Nav.Link>
-            {user.isAdmin && (
-              <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>
-            )}
-          </Nav>
+             <Nav.Link as={Link} to="/analyze" className="nav-link-custom">Analysis</Nav.Link>
+             <Nav.Link as={Link} to="/market" className="nav-link-custom">Market Validation</Nav.Link>
+             <Nav.Link as={Link} to="/qa" className="nav-link-custom">Investor Q&A</Nav.Link>
+             {user.isAdmin && (
+             <Nav.Link as={Link} to="/admin" className="nav-link-custom">Admin Panel</Nav.Link>
+               )}
+         </Nav>
           <Nav>
             <Nav.Link as={Link} to="/dashboard">
               <Image
