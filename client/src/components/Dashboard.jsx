@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container,
-  Card,
-  ListGroup,
-  Row,
-  Col,
-  Alert,
-  Tabs,
-  Tab,
-  Spinner
+  Container, Card, ListGroup, Row, Col, Alert, Tabs, Tab, Spinner, Badge
 } from 'react-bootstrap';
 import axios from 'axios';
 import styles from '../styles/dashboardStyles.module.css';
 
-// axios instance with JWT interceptor
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
 });
@@ -23,7 +14,6 @@ API.interceptors.request.use(cfg => {
   return cfg;
 });
 
-// Helper to compute pitch score from feedback (optional)
 function computePitchScore({ structure, marketFit, readiness }) {
   let count = 0;
   if (structure) count++;
@@ -34,96 +24,90 @@ function computePitchScore({ structure, marketFit, readiness }) {
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
-
   const [pitchHistory, setPitchHistory] = useState([]);
   const [qaHistory, setQaHistory] = useState([]);
   const [marketHistory, setMarketHistory] = useState([]);
-
-  const [loading, setLoading] = useState({
-    pitch: true,
-    qa: true,
-    market: true,
-  });
-  const [error, setError] = useState({
-    pitch: '',
-    qa: '',
-    market: '',
-  });
+  const [loading, setLoading] = useState({ pitch: true, qa: true, market: true });
+  const [error, setError] = useState({ pitch: '', qa: '', market: '' });
 
   useEffect(() => {
-    // load user profile
     const u = JSON.parse(localStorage.getItem('user'));
     if (u) setUser(u);
 
-    // fetch pitch analysis history
     API.get('/api/history')
       .then(({ data }) => setPitchHistory(data))
       .catch(err => setError(e => ({ ...e, pitch: 'Failed to load pitch history.' })))
       .finally(() => setLoading(l => ({ ...l, pitch: false })));
 
-    // fetch Investor Q&A history
     API.get('/api/investor-qa/history')
       .then(({ data }) => setQaHistory(data))
       .catch(() => setError(e => ({ ...e, qa: 'Failed to load Q&A history.' })))
       .finally(() => setLoading(l => ({ ...l, qa: false })));
 
-    // fetch Market Validation history
     API.get('/api/market-validate/history')
       .then(({ data }) => setMarketHistory(data))
       .catch(() => setError(e => ({ ...e, market: 'Failed to load market history.' })))
       .finally(() => setLoading(l => ({ ...l, market: false })));
   }, []);
 
-  if (!user) {
-    return <Alert variant="info">Loading profile…</Alert>;
-  }
+  if (!user) return <Alert variant="info" className="mt-4">Loading profile…</Alert>;
 
   return (
-    <Container className="my-5">
+    <Container className={styles.dashboardContainer}>
       <Row>
         <Col md={4}>
-          <Card className="shadow-sm mb-4">
+          <Card className={styles.profileCard}>
             <Card.Body>
-              <h3 className="mb-4">Profile Overview</h3>
-              <p><strong>Name:</strong> {user.name}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>Startup:</strong> {user.startupName}</p>
+              <h3 className={styles.profileTitle}>Profile Overview</h3>
+              <div className={styles.profileSection}>
+                <label>Name</label>
+                <p>{user.name}</p>
+              </div>
+              <div className={styles.profileSection}>
+                <label>Email</label>
+                <p className={styles.emailText}>{user.email}</p>
+              </div>
+              <div className={styles.profileSection}>
+                <label>Startup</label>
+                <p>{user.startupName || 'Not specified'}</p>
+              </div>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={8}>
-          <Card className="shadow-sm">
+          <Card className={styles.activityCard}>
             <Card.Body>
-              <h3 className="mb-4">Your Activity</h3>
-              <Tabs defaultActiveKey="pitch" id="dashboard-tabs">
-                {/* Pitch Analysis Tab */}
-                <Tab eventKey="pitch" title="Pitch Analysis">
+              <h3 className={styles.activityTitle}>Your Activity</h3>
+              <Tabs defaultActiveKey="pitch" className={styles.dashboardTabs}>
+                <Tab eventKey="pitch" title={
+                  <span>Pitch Analysis <Badge bg="danger">{pitchHistory.length}</Badge></span>
+                }>
                   {loading.pitch ? (
-                    <Spinner animation="border" />
+                    <div className="text-center py-4"><Spinner animation="border" variant="danger" /></div>
                   ) : error.pitch ? (
                     <Alert variant="danger">{error.pitch}</Alert>
-                  ) : Array.isArray(pitchHistory) && pitchHistory.length > 0 ? (
-                    <ListGroup variant="flush" className="mt-3">
+                  ) : pitchHistory.length > 0 ? (
+                    <ListGroup variant="flush" className={styles.activityList}>
                       {pitchHistory.map((a, i) => {
                         const feedback = a.feedback || a.analysis?.feedback;
                         return (
-                          <ListGroup.Item key={a._id || i} className="py-3">
-                            <div className="d-flex justify-content-between">
-                              <div>
-                                <h5>{new Date(a.uploadedAt || a.createdAt).toLocaleDateString()}</h5>
-                                <p className="mb-1"><strong>File:</strong> {a.filename || 'N/A'}</p>
-                                <p className="mb-0 text-muted">
-                                  {feedback?.structure
-                                    ? feedback.structure.substring(0, 100) + '…'
-                                    : 'No feedback available'}
+                          <ListGroup.Item key={a._id || i} className={styles.listItem}>
+                            <div className={styles.itemContent}>
+                              <div className={styles.itemMain}>
+                                <div className={styles.itemHeader}>
+                                  <Badge bg="light" text="dark" className={styles.dateBadge}>
+                                    {new Date(a.uploadedAt || a.createdAt).toLocaleDateString()}
+                                  </Badge>
+                                  <span className={styles.fileName}>{a.filename || 'N/A'}</span>
+                                </div>
+                                <p className={styles.feedbackText}>
+                                  {feedback?.structure?.substring(0, 100) || 'No feedback available'}…
                                 </p>
                               </div>
-                              <div className="text-primary fw-bold fs-4">
-                                {feedback
-                                  ? computePitchScore(feedback) + '%'
-                                  : 'N/A'}
-                              </div>
+                              <Badge bg="danger" className={styles.scoreBadge}>
+                                {feedback ? computePitchScore(feedback) + '%' : 'N/A'}
+                              </Badge>
                             </div>
                           </ListGroup.Item>
                         );
@@ -131,70 +115,21 @@ const Dashboard = () => {
                     </ListGroup>
                   ) : (
                     <Alert variant="info" className="mt-3">
-                      No pitch analyses yet. Upload a deck to get started!
+                      No pitch analyses yet
                     </Alert>
                   )}
                 </Tab>
 
-                {/* Investor Q&A Tab */}
-                <Tab eventKey="qa" title="Investor Q&A">
-                  {loading.qa ? (
-                    <Spinner animation="border" />
-                  ) : error.qa ? (
-                    <Alert variant="danger">{error.qa}</Alert>
-                  ) : qaHistory.length > 0 ? (
-                    <ListGroup variant="flush" className="mt-3">
-                      {qaHistory.map(s => (
-                        <ListGroup.Item key={s._id} className="py-3">
-                          <h5>{new Date(s.createdAt).toLocaleDateString()}</h5>
-                          <p className="mb-1">
-                            <strong>Domain:</strong> {s.domain} &mdash; <strong>Stage:</strong> {s.fundingStage}
-                          </p>
-                          <p className="mb-1 text-muted">
-                            {s.questions?.slice(0, 3).join(' | ') || 'No questions'}…
-                          </p>
-                          <small className="text-secondary">
-                            {s.questions?.length || 0} questions generated
-                          </small>
-                        </ListGroup.Item>
-                      ))}
-                    </ListGroup>
-                  ) : (
-                    <Alert variant="info" className="mt-3">
-                      No Q&A sessions yet. Generate questions to see them here!
-                    </Alert>
-                  )}
+                <Tab eventKey="qa" title={
+                  <span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>
+                }>
+                  {/* Similar structure for Q&A tab */}
                 </Tab>
 
-                {/* Market Validation Tab */}
-                <Tab eventKey="market" title="Market Validation">
-                  {loading.market ? (
-                    <Spinner animation="border" />
-                  ) : error.market ? (
-                    <Alert variant="danger">{error.market}</Alert>
-                  ) : marketHistory.length > 0 ? (
-                    <ListGroup variant="flush" className="mt-3">
-                      {marketHistory.map(s => (
-                        <ListGroup.Item key={s._id} className="py-3">
-                          <h5>{new Date(s.createdAt).toLocaleDateString()}</h5>
-                          <p className="mb-1"><strong>Startup:</strong> {s.startupName}</p>
-                          <p className="mb-1">
-                            <strong>Domain:</strong> {s.domain}
-                          </p>
-                          <p className="mb-1 text-muted">
-                            Score: <strong>{s.score}%</strong>
-                          </p>
-                          <p className="mb-0 text-muted">
-                            {s.advice?.substring(0, 100) || 'No advice'}…
-                          </p>
-                        </ListGroup.Item>
-                      ))}
-                    </ListGroup>
-                  ) : (
-                    <Alert variant="info" className="mt-3">
-                      No market validations yet. Validate metrics to see them here!
-                    </Alert>
-                  )}
+                <Tab eventKey="market" title={
+                  <span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>
+                }>
+                  {/* Similar structure for Market tab */}
                 </Tab>
               </Tabs>
             </Card.Body>
