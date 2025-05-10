@@ -19,8 +19,8 @@ const PrivateNavbar = ({ setIsAuthenticated }) => {
   return (
     <Navbar bg="white" expand="lg" className="shadow-sm">
       <Container>
-        <Navbar.Brand as={Link} to="/dashboard" className="text-danger fw-bold">
-          PitchIn
+        <Navbar.Brand className="text-danger fw-bold" style={{ cursor: 'default' }}>
+           PitchIn
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
