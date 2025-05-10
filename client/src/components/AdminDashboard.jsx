@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Card, Tabs, Tab, Table, Alert, Spinner, Row, Col, Badge
+  Container, Card, Tabs, Tab, Table, Alert, Spinner, Badge
 } from 'react-bootstrap';
 import axios from 'axios';
 import styles from '../styles/dashboardStyles.module.css';
@@ -51,10 +51,10 @@ export default function AdminDashboard() {
           <div className={styles.headerSection}>
             <h3 className={styles.dashboardTitle}>Admin Dashboard</h3>
             <div className={styles.statsRow}>
-              <div className={styles.statBox}>
-                <span>Users</span>
+               <div className={styles.statBox}>
+                   <span>Users</span>
                 <Badge bg="danger" className={styles.statBadge}>{users.length}</Badge>
-              </div>
+               </div>
               <div className={styles.statBox}>
                 <span>Analyses</span>
                 <Badge bg="danger" className={styles.statBadge}>{analyses.length}</Badge>
