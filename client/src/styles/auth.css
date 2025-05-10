@@ -1,5 +1,5 @@
 .auth-container {
-  min-height: 100vh; /* Full viewport height */
+  min-height: 100vh;
   background: linear-gradient(135deg, #1a1a1a 0%, #dc143c 100%);
   display: flex;
   align-items: center;
@@ -14,7 +14,7 @@
   width: 100%;
   max-width: 400px;
   padding: 2.5rem;
-  margin: 20px 0; /* Add margin for breathing room */
+  margin: 20px 0; 
 }
 
 .auth-header {
@@ -59,11 +59,11 @@
 .auth-footer {
     text-align: center;
     margin-top: 1.5rem;
-    color: #6c757d;
+    color: #EDE6D6;
 }
 
 .auth-footer a {
-    color: #dc143c;
+    color: #EDE6D6;
     font-weight: 600;
     text-decoration: none;
 }
