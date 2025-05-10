@@ -1,0 +1,26 @@
+.dashboard-card {
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+}
+
+.stats-badge {
+  background: rgba(220, 20, 60, 0.1) !important;
+  color: #DC143C !important;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+}
+
+.chart-container {
+  height: 300px;
+  background: white;
+  border-radius: 15px;
+  padding: 1rem;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+}
