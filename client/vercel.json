@@ -8,7 +8,13 @@
     }
   ],
   "routes": [
-    { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/(.*)",        "dest": "/index.html" }
+    // 1) Serve screenshots out of public/screenshots
+    { "src": "/screenshots/(.*)", "dest": "/screenshots/$1" },
+
+    // 2) CRA static assets
+    { "src": "/static/(.*)",      "dest": "/static/$1" },
+
+    // 3) All other URLs → index.html (React SPA)
+    { "src": "/(.*)",             "dest": "/index.html" }
   ]
 }
