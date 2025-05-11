@@ -1,5 +1,3 @@
-// server/routes/auth.js
-
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
@@ -9,10 +7,10 @@ const User     = require('../models/User');
 const router = express.Router();
 
 // Token lifetimes
-const ACCESS_EXPIRES  = '15m';  // short-lived access token
-const REFRESH_EXPIRES = '7d';   // long-lived refresh token
+const ACCESS_EXPIRES  = '15m';  // short-lived access
+const REFRESH_EXPIRES = '7d';   // long-lived refresh
 
-// MailboxLayer email validation
+// Email validation
 async function isEmailValid(email) {
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
   const url    = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
@@ -25,9 +23,9 @@ async function isEmailValid(email) {
   }
 }
 
-// Helpers to sign tokens
+// Token helpers
 function signAccessToken(id) {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: ACCESS_EXPIRES });
+  return jwt.sign({ id }, process.env.JWT_SECRET,  { expiresIn: ACCESS_EXPIRES });
 }
 function signRefreshToken(id) {
   return jwt.sign({ id }, process.env.REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES });
@@ -40,40 +38,32 @@ router.post('/signup', async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Please enter all fields' });
     }
-
     if (!await isEmailValid(email)) {
       return res.status(400).json({ message: 'Please use a real email address' });
     }
-
     if (await User.findOne({ email })) {
       return res.status(400).json({ message: 'Email already in use' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
     const isInvestor   = role === 'investor';
-
-    const user = await User.create({
-      name,
-      email,
-      passwordHash,
-      isInvestor
-    });
+    const user = await User.create({ name, email, passwordHash, isInvestor });
 
     const accessToken  = signAccessToken(user._id);
     const refreshToken = signRefreshToken(user._id);
 
     res
-      .cookie('accessToken',  accessToken, {
+      .cookie('accessToken',  accessToken,  {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge:   15 * 60 * 1000,        // 15 minutes
+        maxAge:   15 * 60 * 1000,        // 15m
       })
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge:   7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge:   7 * 24 * 60 * 60 * 1000 // 7d
       })
       .status(201)
       .json({
@@ -109,17 +99,17 @@ router.post('/login', async (req, res) => {
     const refreshToken = signRefreshToken(user._id);
 
     res
-      .cookie('accessToken',  accessToken, {
+      .cookie('accessToken',  accessToken,  {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge:   15 * 60 * 1000,        // 15 minutes
+        maxAge:   15 * 60 * 1000,        // 15m
       })
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge:   7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge:   7 * 24 * 60 * 60 * 1000 // 7d
       })
       .json({
         user: {
@@ -134,6 +124,29 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/auth/refresh
+router.post('/refresh', (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return res.status(401).end();
+
+  try {
+    const { id } = jwt.verify(token, process.env.REFRESH_SECRET);
+    const newAccessToken = signAccessToken(id);
+
+    return res
+      .cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure:   process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge:   15 * 60 * 1000,  // 15m
+      })
+      .status(200)
+      .json({});
+  } catch {
+    return res.status(401).json({ message: 'Refresh token invalid' });
   }
 });
 
