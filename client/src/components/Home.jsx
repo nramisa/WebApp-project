@@ -42,22 +42,22 @@ const features = [
 const howItWorks = [
   {
     title: "Upload Your Deck",
-    img: "/screenshots/Screenshot (177).png",
+    img: "/screenshots/Screenshot1.png",
     desc: "Upload PDF or PPT and let our AI parse every slide."
   },
   {
     title: "Receive Instant Analysis",
-    img: "/screenshots/Screenshot (178).png",
+    img: "/screenshots/Screenshot2.png",
     desc: "Get structure, market-fit, and readiness feedback in seconds."
   },
   {
     title: "Practice Q&A",
-    img: "/screenshots/Screenshot (179).png",
+    img: "/screenshots/Screenshot3.png",
     desc: "Simulate investor questions and get AI-driven tips."
   },
   {
     title: "Receive Market Validity",
-    img: "/screenshots/Screenshot (180).png",
+    img: "/screenshots/Screenshot4.png",
     desc: "Learn about the validity of your idea in the market."
   }
 ];
