@@ -25,18 +25,17 @@ const PrivateNavbar = ({ setIsAuthenticated }) => {
         <Navbar.Collapse id="basic-navbar-nav">
 
           <Nav className="me-auto">
-            {user.isAdmin
-              // ─── ADMIN ONLY ─────────────────────────
-              ? <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>
-              // ─── NORMAL USER LINKS ───────────────────
-              : (
-                <>
-                  <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
-                  <Nav.Link as={Link} to="/market">Market Validation</Nav.Link>
-                  <Nav.Link as={Link} to="/qa">Investor Q&A</Nav.Link>
-                </>
-              )
-            }
+            {user.isAdmin ? (
+              <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>
+            ) : user.isInvestor ? (
+              <Nav.Link as={Link} to="/investor">Investor Panel</Nav.Link>
+            ) : (
+              <>
+                <Nav.Link as={Link} to="/analyze">Analysis</Nav.Link>
+                <Nav.Link as={Link} to="/market">Market Validation</Nav.Link>
+                <Nav.Link as={Link} to="/qa">Investor Q&A</Nav.Link>
+              </>
+            )}
           </Nav>
 
           <Nav>
