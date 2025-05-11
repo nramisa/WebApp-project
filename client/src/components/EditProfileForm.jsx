@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Form, Button, Spinner } from 'react-bootstrap';
+import { Form, Button, Spinner, Alert } from 'react-bootstrap';
 
 export default function EditProfileForm({ initial, onSave, loading, onCancel }) {
   const [form, setForm] = useState(initial);
   const [err, setErr] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) {
-      setErr('Both fields are required');
+    if (!form.name.trim() || !/\S+@\S+\.\S+/.test(form.email)) {
+      setErr('Please enter a valid name and email.');
       return;
     }
     setErr('');
@@ -17,7 +17,7 @@ export default function EditProfileForm({ initial, onSave, loading, onCancel }) 
 
   return (
     <Form onSubmit={handleSubmit} className="mt-4">
-      {err && <p className="text-danger">{err}</p>}
+      {err && <Alert variant="danger">{err}</Alert>}
       <Form.Group className="mb-3">
         <Form.Label>Name</Form.Label>
         <Form.Control
