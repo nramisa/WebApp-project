@@ -115,6 +115,12 @@ function App() {
         <Route path="*" element={
           <Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />
         }/>
+
+          <Route path="/investor" element={
+  isAuthenticated && JSON.parse(localStorage.getItem('user'))?.isInvestor
+    ? <InvestorPanel />
+    : <Navigate to="/" replace />
+} /> 
       </Routes>
 
       <Footer />
