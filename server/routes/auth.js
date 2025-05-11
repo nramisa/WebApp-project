@@ -85,6 +85,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// GET /api/user/me
+router.get('/user/me', auth, (req, res) => {
+  res.json({
+    id:    req.user._id,
+    name:  req.user.name,
+    email: req.user.email,
+    isAdmin: req.user.isAdmin
+  });
+});
+
+// PATCH /api/user/me
+router.patch('/user/me', auth, async (req, res) => {
+  const { name, email } = req.body;
+  // (Optionally: validate email format or SMTP!)
+  req.user.name  = name;
+  req.user.email = email;
+  await req.user.save();
+  res.json({
+    id: req.user._id,
+    name: req.user.name,
+    email:req.user.email,
+    isAdmin: req.user.isAdmin
+  });
+});
+
 module.exports = router;
-
-
