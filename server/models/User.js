@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   passwordHash:      { type: String, required: true },
   isVerified:        { type: Boolean, default: false },
   isAdmin:           { type: Boolean, default: false },
-  isInvestor:        { type: Boolean, default: false }, // ← NEW
+  isInvestor:        { type: Boolean, default: false }, 
   verificationToken: { type: String, default: () => crypto.randomBytes(32).toString('hex') },
   createdAt:         { type: Date, default: Date.now }
 });
