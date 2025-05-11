@@ -26,10 +26,10 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
 
   // For founders
-  const [pitchHistory, setPitchHistory]   = useState([]);
-  const [qaHistory,    setQaHistory]      = useState([]);
-  const [marketHistory,setMarketHistory]  = useState([]);
-  const [loading,      setLoading]        = useState({
+  const [pitchHistory,   setPitchHistory]   = useState([]);
+  const [qaHistory,      setQaHistory]      = useState([]);
+  const [marketHistory,  setMarketHistory]  = useState([]);
+  const [loading,        setLoading]        = useState({
     profile: false,
     pitch: true,
     qa: true,
@@ -42,16 +42,17 @@ export default function Dashboard() {
     market: ''
   });
 
-  // Profile editing & detail modal (shared by founders)
-  const [editing, setEditing] = useState(false);
-  const [detail, setDetail]   = useState({ show: false, type: '', data: null });
+  // UI state
+  const [activeTab, setActiveTab] = useState('pitch');
+  const [editing, setEditing]     = useState(false);
+  const [detail, setDetail]       = useState({ show: false, type: '', data: null });
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('user'));
     if (!u) return;
     setUser(u);
 
-    // Only load full histories for **founders** (not admins, not investors)
+    // Only load histories for founders
     if (!u.isAdmin && !u.isInvestor) {
       API.get('/api/history')
         .then(r => setPitchHistory(r.data))
@@ -84,20 +85,20 @@ export default function Dashboard() {
     }
   };
 
-  // 1) Loading
   if (!user) {
     return <div className="text-center py-5"><Spinner animation="border" /></div>;
   }
 
-  // 2) Admin: profile only
-  if (user.isAdmin) {
+  // Admin & Investor see only profile
+  if (user.isAdmin || user.isInvestor) {
+    const title = user.isAdmin ? 'Admin Profile' : 'Investor Profile';
     return (
       <Container className={styles.dashboardContainer}>
         <Row className="justify-content-center">
           <Col md={6}>
             <Card className={styles.profileCard}>
               <Card.Body>
-                <h3 className={styles.profileTitle}>Admin Profile</h3>
+                <h3 className={styles.profileTitle}>{title}</h3>
                 <div className={styles.profileSection}><label>Name</label><p>{user.name}</p></div>
                 <div className={styles.profileSection}><label>Email</label><p>{user.email}</p></div>
                 <div className="mt-3 text-center">
@@ -120,42 +121,11 @@ export default function Dashboard() {
     );
   }
 
-  // 3) Investor: profile only
-  if (user.isInvestor) {
-    return (
-      <Container className={styles.dashboardContainer}>
-        <Row className="justify-content-center">
-          <Col md={6}>
-            <Card className={styles.profileCard}>
-              <Card.Body>
-                <h3 className={styles.profileTitle}>Investor Profile</h3>
-                <div className={styles.profileSection}><label>Name</label><p>{user.name}</p></div>
-                <div className={styles.profileSection}><label>Email</label><p>{user.email}</p></div>
-                <div className="mt-3 text-center">
-                  <Button onClick={() => setEditing(true)}>Edit Profile</Button>
-                </div>
-                {editing && (
-                  <EditProfileForm
-                    initial={{ name: user.name, email: user.email }}
-                    onSave={handleSave}
-                    loading={loading.profile}
-                    onCancel={() => setEditing(false)}
-                  />
-                )}
-                {error.profile && <Alert variant="danger" className="mt-3">{error.profile}</Alert>}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    );
-  }
-
-  // 4) Founder: full activity dashboard
+  // Founder: full dashboard
   return (
     <Container className={styles.dashboardContainer}>
       <Row>
-        {/* Profile & Edit */}
+        {/* Left column: profile + “My History” summary */}
         <Col md={4}>
           <Card className={styles.profileCard}>
             <Card.Body>
@@ -175,18 +145,53 @@ export default function Dashboard() {
               {error.profile && <Alert variant="danger" className="mt-2">{error.profile}</Alert>}
             </Card.Body>
           </Card>
+
+          <Card className="mt-4">
+            <Card.Body>
+              <h5>My History</h5>
+              <ListGroup variant="flush">
+                <ListGroup.Item
+                  action
+                  active={activeTab === 'pitch'}
+                  onClick={() => setActiveTab('pitch')}
+                >
+                  Pitch Analysis <Badge bg="danger" className="ms-2">{pitchHistory.length}</Badge>
+                </ListGroup.Item>
+                <ListGroup.Item
+                  action
+                  active={activeTab === 'qa'}
+                  onClick={() => setActiveTab('qa')}
+                >
+                  Investor Q&A <Badge bg="danger" className="ms-2">{qaHistory.length}</Badge>
+                </ListGroup.Item>
+                <ListGroup.Item
+                  action
+                  active={activeTab === 'market'}
+                  onClick={() => setActiveTab('market')}
+                >
+                  Market Validation <Badge bg="danger" className="ms-2">{marketHistory.length}</Badge>
+                </ListGroup.Item>
+              </ListGroup>
+            </Card.Body>
+          </Card>
         </Col>
 
-        {/* Activity */}
+        {/* Right column: activity tabs */}
         <Col md={8}>
           <Card className={styles.activityCard}>
             <Card.Body>
               <h3 className={styles.activityTitle}>Your Activity</h3>
-              <Tabs defaultActiveKey="pitch" className={styles.dashboardTabs}>
+              <Tabs
+                activeKey={activeTab}
+                onSelect={k => setActiveTab(k)}
+                className={styles.dashboardTabs}
+              >
 
-                {/* Pitch Analysis */}
-                <Tab eventKey="pitch"
-                     title={<span>Pitch Analysis <Badge bg="danger">{pitchHistory.length}</Badge></span>}>
+                {/* PITCH */}
+                <Tab
+                  eventKey="pitch"
+                  title={<span>Pitch Analysis <Badge bg="danger">{pitchHistory.length}</Badge></span>}
+                >
                   {loading.pitch
                     ? <div className="text-center py-4"><Spinner /></div>
                     : error.pitch
@@ -194,19 +199,21 @@ export default function Dashboard() {
                       : pitchHistory.length > 0
                         ? <ListGroup variant="flush" className={styles.activityList}>
                             {pitchHistory.map(a => (
-                              <ListGroup.Item key={a._id}
-                                              action
-                                              className={styles.listItem}
-                                              onClick={() => setDetail({ show: true, type: 'pitch', data: a })}>
+                              <ListGroup.Item
+                                key={a._id}
+                                action
+                                className={styles.listItem}
+                                onClick={() => setDetail({ show: true, type: 'pitch', data: a })}
+                              >
                                 <div className={styles.itemHeader}>
                                   <Badge bg="light" text="dark">
                                     {new Date(a.uploadedAt).toLocaleDateString()}
-                                  </Badge>
+                                  </Badge>{' '}
                                   <span className={styles.fileName}>{a.filename}</span>
                                 </div>
                                 <div className="d-flex justify-content-between">
                                   <p className={styles.feedbackText}>
-                                    {a.feedback?.structure?.substring(0,50)}…
+                                    {a.feedback?.structure?.substring(0, 50)}…
                                   </p>
                                   <Badge bg="danger" className={styles.scoreBadge}>
                                     {computePitchScore(a.feedback)}%
@@ -219,9 +226,11 @@ export default function Dashboard() {
                   }
                 </Tab>
 
-                {/* Investor Q&A */}
-                <Tab eventKey="qa"
-                     title={<span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>}>
+                {/* Q&A */}
+                <Tab
+                  eventKey="qa"
+                  title={<span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>}
+                >
                   {loading.qa
                     ? <div className="text-center py-4"><Spinner /></div>
                     : error.qa
@@ -229,18 +238,20 @@ export default function Dashboard() {
                       : qaHistory.length > 0
                         ? <ListGroup variant="flush" className={styles.activityList}>
                             {qaHistory.map(s => (
-                              <ListGroup.Item key={s._id}
-                                              action
-                                              className={styles.listItem}
-                                              onClick={() => setDetail({ show: true, type: 'qa', data: s })}>
+                              <ListGroup.Item
+                                key={s._id}
+                                action
+                                className={styles.listItem}
+                                onClick={() => setDetail({ show: true, type: 'qa', data: s })}
+                              >
                                 <div className={styles.itemHeader}>
                                   <Badge bg="light" text="dark">
                                     {new Date(s.createdAt).toLocaleDateString()}
-                                  </Badge>
+                                  </Badge>{' '}
                                   <span className={styles.fileName}>{s.domain}</span>
                                 </div>
                                 <p className={styles.feedbackText}>
-                                  {s.questions.slice(0,3).join(' | ')}…
+                                  {s.questions.slice(0, 3).join(' | ')}…
                                 </p>
                               </ListGroup.Item>
                             ))}
@@ -249,9 +260,11 @@ export default function Dashboard() {
                   }
                 </Tab>
 
-                {/* Market Validation */}
-                <Tab eventKey="market"
-                     title={<span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>}>
+                {/* MARKET */}
+                <Tab
+                  eventKey="market"
+                  title={<span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>}
+                >
                   {loading.market
                     ? <div className="text-center py-4"><Spinner /></div>
                     : error.market
@@ -259,18 +272,20 @@ export default function Dashboard() {
                       : marketHistory.length > 0
                         ? <ListGroup variant="flush" className={styles.activityList}>
                             {marketHistory.map(s => (
-                              <ListGroup.Item key={s._id}
-                                              action
-                                              className={styles.listItem}
-                                              onClick={() => setDetail({ show: true, type: 'market', data: s })}>
+                              <ListGroup.Item
+                                key={s._id}
+                                action
+                                className={styles.listItem}
+                                onClick={() => setDetail({ show: true, type: 'market', data: s })}
+                              >
                                 <div className={styles.itemHeader}>
                                   <Badge bg="light" text="dark">
                                     {new Date(s.createdAt).toLocaleDateString()}
-                                  </Badge>
+                                  </Badge>{' '}
                                   <span className={styles.fileName}>{s.startupName}</span>
                                 </div>
                                 <p className={styles.feedbackText}>
-                                  Score: <strong>{s.score}%</strong> – {s.advice.substring(0,50)}…
+                                  Score: <strong>{s.score}%</strong> – {s.advice.substring(0, 50)}…
                                 </p>
                               </ListGroup.Item>
                             ))}
@@ -293,9 +308,9 @@ export default function Dashboard() {
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            {detail.type === 'pitch' ? 'Pitch Analysis Details'
-             : detail.type === 'qa'    ? 'Investor Q&A Details'
-             : 'Market Validation Details'}
+            {detail.type === 'pitch'  ? 'Pitch Analysis Details'
+             : detail.type === 'qa'     ? 'Investor Q&A Details'
+             :                           'Market Validation Details'}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -315,7 +330,7 @@ export default function Dashboard() {
                 <p><strong>Q:</strong> {ans.question}</p>
                 <p><strong>Your Answer:</strong> {ans.userAnswer}</p>
                 <p><strong>Feedback:</strong> {ans.aiFeedback}</p>
-                <hr />
+                <hr/>
               </div>
             ))
           )}
