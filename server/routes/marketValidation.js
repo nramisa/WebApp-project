@@ -1,4 +1,3 @@
-// server/routes/marketValidation.js
 const express = require('express');
 const { OpenAI } = require('openai');
 const auth = require('../middleware/auth');
