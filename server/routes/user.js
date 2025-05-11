@@ -5,13 +5,27 @@ const User    = require('../models/User');
 
 router.use(auth);
 
+// GET /api/user/me
+router.get('/me', async (req, res) => {
+  const u = req.user;
+  res.json({
+    id:          u._id,
+    name:        u.name,
+    email:       u.email,
+    isAdmin:     u.isAdmin,
+    isInvestor:  u.isInvestor,
+    startupName: u.startupName || ''
+  });
+});
+
 // PATCH /api/user/me
 router.patch('/me', async (req, res) => {
   const { name, email } = req.body;
   if (!name?.trim() || !email?.trim()) {
     return res.status(400).json({ message: 'Name and email are required.' });
   }
-  // If email changed, ensure uniqueness
+
+  // Ensure new email is not taken
   if (email !== req.user.email) {
     const exists = await User.findOne({ email });
     if (exists) {
@@ -23,13 +37,12 @@ router.patch('/me', async (req, res) => {
     req.user.name  = name;
     req.user.email = email;
     await req.user.save();
-    // return only safe fields
-    return res.json({
-      id:       req.user._id,
-      name:     req.user.name,
-      email:    req.user.email,
-      isAdmin:  req.user.isAdmin,
-      // if you have startupName on User schema:
+    res.json({
+      id:          req.user._id,
+      name:        req.user.name,
+      email:       req.user.email,
+      isAdmin:     req.user.isAdmin,
+      isInvestor:  req.user.isInvestor,
       startupName: req.user.startupName || ''
     });
   } catch (err) {
