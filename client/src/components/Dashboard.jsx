@@ -6,7 +6,6 @@ import {
 import axios from 'axios';
 import EditProfileForm from './EditProfileForm';
 import styles from '../styles/dashboardStyles.module.css';
-
 const API = axios.create({ baseURL: process.env.REACT_APP_API_URL });
 API.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token');
