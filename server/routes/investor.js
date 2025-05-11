@@ -1,37 +1,37 @@
-const express = require('express');
-const router = express.Router();
-const auth = require('../middleware/auth');
+const express  = require('express');
+const router   = express.Router();
+const auth     = require('../middleware/auth');
 const Analysis = require('../models/Analysis');
-const User = require('../models/User');
 
-// Only investors can see startup pitch summaries
 router.get('/startups', auth, async (req, res) => {
+  // only investors get this list
   if (!req.user.isInvestor) {
     return res.status(403).json({ message: 'Access denied' });
   }
 
   try {
-    const results = await Analysis.find()
+    // pull all pitch analyses, newest first
+    const all = await Analysis.find()
       .populate('user', 'startupName')
       .sort({ uploadedAt: -1 });
 
-    const uniqueStartups = [];
+    // dedupe per startup
     const seen = new Set();
-
-    for (const result of results) {
-      const uid = result.user?._id?.toString();
-      if (uid && !seen.has(uid)) {
+    const list = [];
+    for (let a of all) {
+      const uid = a.user._id.toString();
+      if (!seen.has(uid)) {
         seen.add(uid);
-        uniqueStartups.push({
-          startupName: result.user?.startupName || 'Unnamed Startup',
-          pitchSummary: result.feedback?.structure?.substring(0, 100) || 'No summary available'
+        list.push({
+          startupName:  a.user.startupName || 'Unnamed Startup',
+          pitchSummary: (a.feedback?.structure || '').slice(0, 100) || 'No summary available'
         });
       }
     }
 
-    res.json(uniqueStartups);
+    res.json(list);
   } catch (err) {
-    console.error('Investor /startups error:', err);
+    console.error('Investor panel error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
