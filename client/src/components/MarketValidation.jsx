@@ -1,4 +1,3 @@
-// client/src/components/MarketValidation.jsx
 import React, { useState } from 'react';
 import { Form, Button, Card, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
