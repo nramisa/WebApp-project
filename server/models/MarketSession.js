@@ -5,7 +5,7 @@ const schema = new mongoose.Schema({
   domain:      String,
   metrics:     Object,
   score:       Number,
-  advice:      String,  // new: detailed market advice
+  advice:      String,  
   createdAt:   { type: Date, default: Date.now },
 });
 module.exports = mongoose.model('MarketSession', schema);
