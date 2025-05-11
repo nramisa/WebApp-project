@@ -1,3 +1,5 @@
+// server/routes/auth.js
+
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
@@ -5,20 +7,30 @@ const axios    = require('axios');
 const User     = require('../models/User');
 
 const router = express.Router();
-const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
-const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
 
-// Email validation via MailboxLayer
+// Token lifetimes
+const ACCESS_EXPIRES  = '15m';  // short-lived access token
+const REFRESH_EXPIRES = '7d';   // long-lived refresh token
+
+// MailboxLayer email validation
 async function isEmailValid(email) {
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
-  const url = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
+  const url    = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
   try {
     const { data } = await axios.get(url);
     return data.format_valid && data.smtp_check;
   } catch (err) {
     console.error('MailboxLayer error:', err.message);
-    return false; // treat as invalid if the validation API fails
+    return false;
   }
+}
+
+// Helpers to sign tokens
+function signAccessToken(id) {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: ACCESS_EXPIRES });
+}
+function signRefreshToken(id) {
+  return jwt.sign({ id }, process.env.REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES });
 }
 
 // POST /api/auth/signup
@@ -29,8 +41,7 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Please enter all fields' });
     }
 
-    const valid = await isEmailValid(email);
-    if (!valid) {
+    if (!await isEmailValid(email)) {
       return res.status(400).json({ message: 'Please use a real email address' });
     }
 
@@ -39,7 +50,7 @@ router.post('/signup', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const isInvestor = role === 'investor';
+    const isInvestor   = role === 'investor';
 
     const user = await User.create({
       name,
@@ -48,15 +59,21 @@ router.post('/signup', async (req, res) => {
       isInvestor
     });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
+    const accessToken  = signAccessToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
 
-    // set the token in an httpOnly, secure cookie
     res
-      .cookie('token', token, {
+      .cookie('accessToken',  accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',                 // CSRF mitigation
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        secure:   process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge:   15 * 60 * 1000,        // 15 minutes
+      })
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure:   process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge:   7 * 24 * 60 * 60 * 1000 // 7 days
       })
       .status(201)
       .json({
@@ -88,15 +105,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
+    const accessToken  = signAccessToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
 
-    // set the token in an httpOnly, secure cookie
     res
-      .cookie('token', token, {
+      .cookie('accessToken',  accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge:   15 * 60 * 1000,        // 15 minutes
+      })
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure:   process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge:   7 * 24 * 60 * 60 * 1000 // 7 days
       })
       .json({
         user: {
