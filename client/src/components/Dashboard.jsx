@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Card, ListGroup, Row, Col, Alert,
-  Tabs, Tab, Spinner, Badge, Button, Modal
+  Container, Card, Row, Col, Alert, Button, Spinner
 } from 'react-bootstrap';
 import axios from 'axios';
 import EditProfileForm from './EditProfileForm';
@@ -14,63 +13,28 @@ API.interceptors.request.use(cfg => {
   return cfg;
 });
 
-function computePitchScore({ structure, marketFit, readiness }) {
-  let count = 0;
-  if (structure) count++;
-  if (marketFit) count++;
-  if (readiness) count++;
-  return Math.round((count / 3) * 100);
-}
-
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  // histories
-  const [pitchHistory, setPitchHistory] = useState([]);
-  const [qaHistory, setQaHistory] = useState([]);
-  const [marketHistory, setMarketHistory] = useState([]);
-  // loading & error
-  const [loading, setLoading] = useState({ profile: false, pitch: true, qa: true, market: true });
-  const [error, setError]     = useState({ profile: '', pitch: '', qa: '', market: '' });
-  // editing profile
   const [editing, setEditing] = useState(false);
-  // detail modal
-  const [detail, setDetail]   = useState({ show: false, type: '', data: null });
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem('user'));
-    if (u) {
-      setUser(u);
-      // fetch histories only for non-admins
-      if (!u.isAdmin) {
-        API.get('/api/history')
-          .then(({ data }) => setPitchHistory(data))
-          .catch(() => setError(e => ({ ...e, pitch: 'Failed to load pitch history.' })))
-          .finally(() => setLoading(l => ({ ...l, pitch: false })));
-
-        API.get('/api/investor-qa/history')
-          .then(({ data }) => setQaHistory(data))
-          .catch(() => setError(e => ({ ...e, qa: 'Failed to load Q&A history.' })))
-          .finally(() => setLoading(l => ({ ...l, qa: false })));
-
-        API.get('/api/market-validate/history')
-          .then(({ data }) => setMarketHistory(data))
-          .catch(() => setError(e => ({ ...e, market: 'Failed to load market history.' })))
-          .finally(() => setLoading(l => ({ ...l, market: false })));
-      }
-    }
+    if (u) setUser(u);
   }, []);
 
   const handleSave = async updates => {
-    setLoading(l => ({ ...l, profile: true }));
+    setLoading(true);
     try {
       const res = await API.patch('/api/user/me', updates);
       localStorage.setItem('user', JSON.stringify(res.data));
       setUser(res.data);
       setEditing(false);
     } catch {
-      setError(e => ({ ...e, profile: 'Failed to update profile.' }));
+      setError('Failed to update profile.');
     } finally {
-      setLoading(l => ({ ...l, profile: false }));
+      setLoading(false);
     }
   };
 
@@ -78,222 +42,40 @@ export default function Dashboard() {
     return <div className="text-center py-5"><Spinner animation="border" /></div>;
   }
 
-  // Admin: only profile editing (already implemented earlier)
-  if (user.isAdmin) {
-    return (
-      <Container className={styles.dashboardContainer}>
-        <Row className="justify-content-center">
-          <Col md={6}>
-            <Card className={styles.profileCard}>
-              <Card.Body>
-                <h3 className={styles.profileTitle}>Admin Profile</h3>
-                <div className={styles.profileSection}><label>Name</label><p>{user.name}</p></div>
-                <div className={styles.profileSection}><label>Email</label><p>{user.email}</p></div>
-                <div className="mt-3 text-center">
-                  <Button onClick={() => setEditing(true)}>Edit Profile</Button>
-                </div>
-                {editing && (
-                  <EditProfileForm
-                    initial={{ name: user.name, email: user.email }}
-                    onSave={handleSave}
-                    loading={loading.profile}
-                    onCancel={() => setEditing(false)}
-                  />
-                )}
-                {error.profile && <Alert variant="danger" className="mt-3">{error.profile}</Alert>}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    );
-  }
+  const roleTitle = user.isAdmin
+    ? 'Admin Profile'
+    : user.isInvestor
+    ? 'Investor Profile'
+    : 'Profile Overview';
 
-  // Non-admin: full dashboard + profile edit + clickable items
   return (
     <Container className={styles.dashboardContainer}>
-      <Row>
-        {/* Profile & Edit */}
-        <Col md={4}>
+      <Row className="justify-content-center">
+        <Col md={6}>
           <Card className={styles.profileCard}>
             <Card.Body>
-              <h3 className={styles.profileTitle}>Profile Overview</h3>
+              <h3 className={styles.profileTitle}>{roleTitle}</h3>
               <div className={styles.profileSection}><label>Name</label><p>{user.name}</p></div>
               <div className={styles.profileSection}><label>Email</label><p>{user.email}</p></div>
-              <div className={styles.profileSection}><label>Startup</label><p>{user.startupName || 'N/A'}</p></div>
-              <Button size="sm" onClick={() => setEditing(true)}>Edit Profile</Button>
+              {!user.isAdmin && !user.isInvestor && (
+                <div className={styles.profileSection}><label>Startup</label><p>{user.startupName || 'N/A'}</p></div>
+              )}
+              <div className="mt-3 text-center">
+                <Button onClick={() => setEditing(true)}>Edit Profile</Button>
+              </div>
               {editing && (
                 <EditProfileForm
                   initial={{ name: user.name, email: user.email }}
                   onSave={handleSave}
-                  loading={loading.profile}
+                  loading={loading}
                   onCancel={() => setEditing(false)}
                 />
               )}
-              {error.profile && <Alert variant="danger" className="mt-2">{error.profile}</Alert>}
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Activity with clickable items */}
-        <Col md={8}>
-          <Card className={styles.activityCard}>
-            <Card.Body>
-              <h3 className={styles.activityTitle}>Your Activity</h3>
-              <Tabs defaultActiveKey="pitch" className={styles.dashboardTabs}>
-
-                {/* Pitch Analysis */}
-                <Tab eventKey="pitch" title={<span>Pitch Analysis <Badge bg="danger">{pitchHistory.length}</Badge></span>}>
-                  {loading.pitch
-                    ? <div className="text-center py-4"><Spinner /></div>
-                    : error.pitch
-                      ? <Alert variant="danger">{error.pitch}</Alert>
-                      : pitchHistory.length > 0
-                        ? (
-                          <ListGroup variant="flush" className={styles.activityList}>
-                            {pitchHistory.map(a => (
-                              <ListGroup.Item
-                                key={a._id}
-                                className={styles.listItem}
-                                action
-                                onClick={() => setDetail({ show: true, type: 'pitch', data: a })}
-                              >
-                                <div className={styles.itemHeader}>
-                                  <Badge bg="light" text="dark">{new Date(a.uploadedAt).toLocaleDateString()}</Badge>
-                                  <span className={styles.fileName}>{a.filename}</span>
-                                </div>
-                                <div className="d-flex justify-content-between">
-                                  <p className={styles.feedbackText}>
-                                    {a.feedback?.structure?.substring(0,50)}…
-                                  </p>
-                                  <Badge bg="danger" className={styles.scoreBadge}>
-                                    {computePitchScore(a.feedback)}%
-                                  </Badge>
-                                </div>
-                              </ListGroup.Item>
-                            ))}
-                          </ListGroup>
-                        )
-                        : <Alert variant="info" className="mt-3">No pitch analyses yet.</Alert>
-                  }
-                </Tab>
-
-                {/* Investor Q&A */}
-                <Tab eventKey="qa" title={<span>Investor Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>}>
-                  {loading.qa
-                    ? <div className="text-center py-4"><Spinner /></div>
-                    : error.qa
-                      ? <Alert variant="danger">{error.qa}</Alert>
-                      : qaHistory.length > 0
-                        ? (
-                          <ListGroup variant="flush" className={styles.activityList}>
-                            {qaHistory.map(s => (
-                              <ListGroup.Item
-                                key={s._id}
-                                className={styles.listItem}
-                                action
-                                onClick={() => setDetail({ show: true, type: 'qa', data: s })}
-                              >
-                                <div className={styles.itemHeader}>
-                                  <Badge bg="light" text="dark">{new Date(s.createdAt).toLocaleDateString()}</Badge>
-                                  <span className={styles.fileName}>{s.domain}</span>
-                                </div>
-                                <p className={styles.feedbackText}>
-                                  {s.questions.slice(0,3).join(' | ')}…
-                                </p>
-                              </ListGroup.Item>
-                            ))}
-                          </ListGroup>
-                        )
-                        : <Alert variant="info" className="mt-3">No Q&A sessions yet.</Alert>
-                  }
-                </Tab>
-
-                {/* Market Validation */}
-                <Tab eventKey="market" title={<span>Market Validation <Badge bg="danger">{marketHistory.length}</Badge></span>}>
-                  {loading.market
-                    ? <div className="text-center py-4"><Spinner /></div>
-                    : error.market
-                      ? <Alert variant="danger">{error.market}</Alert>
-                      : marketHistory.length > 0
-                        ? (
-                          <ListGroup variant="flush" className={styles.activityList}>
-                            {marketHistory.map(s => (
-                              <ListGroup.Item
-                                key={s._id}
-                                className={styles.listItem}
-                                action
-                                onClick={() => setDetail({ show: true, type: 'market', data: s })}
-                              >
-                                <div className={styles.itemHeader}>
-                                  <Badge bg="light" text="dark">{new Date(s.createdAt).toLocaleDateString()}</Badge>
-                                  <span className={styles.fileName}>{s.startupName}</span>
-                                </div>
-                                <p className={styles.feedbackText}>
-                                  Score: <strong>{s.score}%</strong> – {s.advice.substring(0,50)}…
-                                </p>
-                              </ListGroup.Item>
-                            ))}
-                          </ListGroup>
-                        )
-                        : <Alert variant="info" className="mt-3">No market validations yet.</Alert>
-                  }
-                </Tab>
-
-              </Tabs>
+              {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
             </Card.Body>
           </Card>
         </Col>
       </Row>
-
-      {/* Detail Modal */}
-      <Modal
-        show={detail.show}
-        onHide={() => setDetail({ show: false, type: '', data: null })}
-        size="lg"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {detail.type === 'pitch' ? 'Pitch Analysis Details'
-              : detail.type === 'qa' ? 'Investor Q&A Details'
-              : 'Market Validation Details'}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {detail.type === 'pitch' && detail.data && (
-            <>
-              <h5>Structure</h5>
-              <p>{detail.data.feedback.structure}</p>
-              <h5>Market Fit</h5>
-              <p>{detail.data.feedback.marketFit}</p>
-              <h5>Readiness</h5>
-              <p>{detail.data.feedback.readiness}</p>
-            </>
-          )}
-          {detail.type === 'qa' && detail.data && (
-            <>
-              {detail.data.answers.map((ans,i) => (
-                <div key={i} className="mb-3">
-                  <p><strong>Q:</strong> {ans.question}</p>
-                  <p><strong>Your Answer:</strong> {ans.userAnswer}</p>
-                  <p><strong>Feedback:</strong> {ans.aiFeedback}</p>
-                  <hr />
-                </div>
-              ))}
-            </>
-          )}
-          {detail.type === 'market' && detail.data && (
-            <>
-              <p><strong>Startup:</strong> {detail.data.startupName}</p>
-              <p><strong>Domain:</strong> {detail.data.domain}</p>
-              <p><strong>Metrics:</strong> {JSON.stringify(detail.data.metrics)}</p>
-              <p><strong>Score:</strong> {detail.data.score}%</p>
-              <h5>Advice</h5>
-              <p>{detail.data.advice}</p>
-            </>
-          )}
-        </Modal.Body>
-      </Modal>
     </Container>
   );
 }
