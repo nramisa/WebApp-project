@@ -8,7 +8,7 @@ const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
 const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
 
-// ✅ Email validation via MailboxLayer
+// Email validation via MailboxLayer
 async function isEmailValid(email) {
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
   const url = `http://apilayer.net/api/check?access_key=${apiKey}&email=${email}&smtp=1&format=1`;
@@ -20,7 +20,7 @@ async function isEmailValid(email) {
   }
 }
 
-// ✅ POST /api/auth/signup
+// POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -65,7 +65,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// ✅ POST /api/auth/login
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
