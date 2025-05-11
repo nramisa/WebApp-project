@@ -22,6 +22,7 @@ import MarketValidation  from './components/MarketValidation';
 import InvestorQA        from './components/InvestorQA';
 import AdminDashboard    from './components/AdminDashboard';
 import Footer            from './components/Footer';
+import InvestorPanel from './components/InvestorPanel';
 
 // Axios instance
 const api = axios.create({
