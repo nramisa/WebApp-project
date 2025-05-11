@@ -49,16 +49,24 @@ router.post('/signup', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
-    res.json({
-      token,
-      user: {
-        id:         user._id,
-        name:       user.name,
-        email:      user.email,
-        isAdmin:    user.isAdmin,
-        isInvestor: user.isInvestor
-      }
-    });
+    // set the token in an httpOnly, secure cookie
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .json({
+        user: {
+          id:         user._id,
+          name:       user.name,
+          email:      user.email,
+          isAdmin:    user.isAdmin,
+          isInvestor: user.isInvestor
+        }
+      });
+
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -80,16 +88,24 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
 
-    res.json({
-      token,
-      user: {
-        id:         user._id,
-        name:       user.name,
-        email:      user.email,
-        isAdmin:    user.isAdmin,
-        isInvestor: user.isInvestor
-      }
-    });
+    // set the token in an httpOnly, secure cookie
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .json({
+        user: {
+          id:         user._id,
+          name:       user.name,
+          email:      user.email,
+          isAdmin:    user.isAdmin,
+          isInvestor: user.isInvestor
+        }
+      });
+
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
