@@ -11,6 +11,7 @@ const verifyRoutes   = require('./routes/verify');
 const investorRoutes = require('./routes/investorQA');
 const marketRoutes   = require('./routes/marketValidation');
 const adminRoutes    = require('./routes/admin');
+const userRoutes = require('./routes/user');
 
 const app = express();
 app.use(cors());
@@ -33,6 +34,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/investor-qa', investorRoutes);
 app.use('/api/market-validate', marketRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/user', userRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
