@@ -1,8 +1,8 @@
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const User     = require('../models/User');
 const axios    = require('axios');
+const User     = require('../models/User');
 
 const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
@@ -15,8 +15,9 @@ async function isEmailValid(email) {
   try {
     const { data } = await axios.get(url);
     return data.format_valid && data.smtp_check;
-  } catch {
-    return false; // if API fails, treat as invalid
+  } catch (err) {
+    console.error('MailboxLayer error:', err.message);
+    return false; // treat as invalid if the validation API fails
   }
 }
 
@@ -54,9 +55,10 @@ router.post('/signup', async (req, res) => {
       .cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'lax',                 // CSRF mitigation
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
+      .status(201)
       .json({
         user: {
           id:         user._id,
