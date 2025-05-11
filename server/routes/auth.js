@@ -3,6 +3,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const User     = require('../models/User');
 const axios    = require('axios');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
