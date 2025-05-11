@@ -2,6 +2,8 @@ require('dotenv').config();
 const express  = require('express');
 const mongoose = require('mongoose');
 const cors     = require('cors');
+const helmet = require('helmet');
+
 
 const authRoutes     = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
@@ -17,6 +19,7 @@ const investorMatchRoutes = require('./routes/investor');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(helmet());
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
