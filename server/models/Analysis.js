@@ -10,5 +10,4 @@ const analysisSchema = new mongoose.Schema({
     readiness:  String
   }
 });
-
 module.exports = mongoose.model('Analysis', analysisSchema);
