@@ -1,10 +1,7 @@
-// server/routes/admin.js
-
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const adminOnly = require('../middleware/adminOnly');
-
 const User             = require('../models/User');
 const Analysis         = require('../models/Analysis');
 const InvestorSession  = require('../models/InvestorSession');
@@ -35,5 +32,22 @@ router.get('/market', async (req, res) => {
   const results = await MarketSession.find().populate('user', 'name email startupName');
   res.json(results);
 });
+
+// PATCH /api/admin/users/:id
+router.patch('/users/:id', async (req, res) => {
+  const { name, email, isAdmin } = req.body;
+  const updates = { name, email };
+  // If you want to allow toggling admin status:
+  if (typeof isAdmin === 'boolean') updates.isAdmin = isAdmin;
+  const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-passwordHash');
+  res.json(user);
+});
+
+// DELETE /api/admin/users/:id
+router.delete('/users/:id', async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
+});
+
 
 module.exports = router;
