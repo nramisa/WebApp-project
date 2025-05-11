@@ -58,6 +58,7 @@ const howItWorks = [
   {
     title: "Receive Market Validity",
     img: "/screenshots/Screenshot (180).png",
+    desc: "Learn about the validity of your idea in the market."
   }
 ];
 
