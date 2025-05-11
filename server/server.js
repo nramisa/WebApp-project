@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express      = require('express');
+const cookieParser = require('cookie-parser');
 const mongoose     = require('mongoose');
 const cors         = require('cors');
 const cookieParser = require('cookie-parser');
@@ -16,16 +17,12 @@ const userRoutes        = require('./routes/user');
 const investorRoutes    = require('./routes/investor');  // <— new
 
 const app = express();
-
-// CORS (adjust origins as needed)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || true,
-  credentials: true,            // enable sending/receiving cookies
+origin: process.env.FRONTEND_URL,   // e.g. "https://my-app.vercel.app"
+credentials: true                   // <- allow cookies across domains
 }));
-
 // Built-in JSON parser
 app.use(express.json());
-
 // Cookie parser (for reading httpOnly cookie “token”)
 app.use(cookieParser());
 
