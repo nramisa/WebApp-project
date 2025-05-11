@@ -1,4 +1,3 @@
-// client/src/components/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import {
   Container, Row, Col, Card, ListGroup, Tabs, Tab, Alert,
