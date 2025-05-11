@@ -1,7 +1,8 @@
 require('dotenv').config();
-const express  = require('express');
-const mongoose = require('mongoose');
-const cors     = require('cors');
+const express      = require('express');
+const mongoose     = require('mongoose');
+const cors         = require('cors');
+const cookieParser = require('cookie-parser');
 
 const authRoutes        = require('./routes/auth');
 const analysisRoutes    = require('./routes/analysis');
@@ -15,8 +16,18 @@ const userRoutes        = require('./routes/user');
 const investorRoutes    = require('./routes/investor');  // <— new
 
 const app = express();
-app.use(cors());
+
+// CORS (adjust origins as needed)
+app.use(cors({
+  origin: process.env.FRONTEND_URL || true,
+  credentials: true,            // enable sending/receiving cookies
+}));
+
+// Built-in JSON parser
 app.use(express.json());
+
+// Cookie parser (for reading httpOnly cookie “token”)
+app.use(cookieParser());
 
 // Health check
 app.get('/api/health', (req, res) =>
@@ -24,11 +35,11 @@ app.get('/api/health', (req, res) =>
 );
 
 // Public & auth
-app.use('/api/auth', authRoutes);
+app.use('/api/auth',       authRoutes);
 app.use('/api/auth/verify', verifyRoutes);
 
 // Protected / user profile
-app.use('/api/user', userRoutes);
+app.use('/api/user',       userRoutes);
 
 // Core app functionality
 app.use('/api/analysis',      analysisRoutes);
