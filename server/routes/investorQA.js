@@ -23,9 +23,9 @@ Generate 10 concise questions that a ${investorType} investor would ask a startu
 `;
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 400,
+      max_tokens: 250,
     });
     const raw = completion.choices?.[0]?.message?.content || '';
     const questions = raw.split('\n').map(l => l.trim()).filter(l => l);
@@ -72,9 +72,9 @@ Here is the user’s answer:
 Provide concise, constructive feedback on their answer and suggest improvements.
 `;
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
+      max_tokens: 200,
     });
     const aiFeedback = completion.choices?.[0]?.message?.content || 'No feedback returned.';
 
