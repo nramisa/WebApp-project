@@ -2,35 +2,43 @@ require('dotenv').config();
 const express  = require('express');
 const mongoose = require('mongoose');
 const cors     = require('cors');
-const helmet = require('helmet');
+const helmet   = require('helmet');
 
-const authRoutes     = require('./routes/auth');
-const analysisRoutes = require('./routes/analysis');
-const modelsRoutes   = require('./routes/models');
-const historyRoutes  = require('./routes/history');
-const verifyRoutes   = require('./routes/verify');
-const investorQARoutes = require('./routes/investorQA');
-const marketRoutes   = require('./routes/marketValidation');
-const adminRoutes    = require('./routes/admin');
-const userRoutes     = require('./routes/user'); 
+const authRoutes        = require('./routes/auth');
+const analysisRoutes    = require('./routes/analysis');
+const modelsRoutes      = require('./routes/models');
+const historyRoutes     = require('./routes/history');
+const verifyRoutes      = require('./routes/verify');
+const investorQARoutes  = require('./routes/investorQA');
+const marketRoutes      = require('./routes/marketValidation');
+const adminRoutes       = require('./routes/admin');
+const userRoutes        = require('./routes/user');
 const investorMatchRoutes = require('./routes/investor');
-const creditsRouter = require('./routes/credits');
+const creditsRouter     = require('./routes/credits');
 
 const app = express();
+
+// security & parsing
 app.use(cors());
 app.use(express.json());
 app.use(helmet());
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
+// health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
-// Public & auth
+// public/auth
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/verify', verifyRoutes);
+
+// credits endpoint (protected by auth inside creditsRouter)
 app.use('/api/credits', creditsRouter);
-// Protected / user profile
+
+// protected/user-profile
 app.use('/api/user', userRoutes);
-// Your existing protected routes
+
+// your AI & history routes
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/models', modelsRoutes);
 app.use('/api/history', historyRoutes);
@@ -39,19 +47,24 @@ app.use('/api/market-validate', marketRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/investor', investorMatchRoutes);
 
-// Error handler
+// global error handler
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Server error' });
 });
 
-// Mongo
+// connect to Mongo and start server
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(_ => {
-    console.log('MongoDB connected');
-    app.listen(process.env.PORT || 3001, () =>
-      console.log(`Server running on port ${process.env.PORT || 3001}`)
-    );
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser:    true,
+    useUnifiedTopology: true,
   })
-  .catch(err => console.error('📌 Mongo connection error:', err));
+  .then(() => {
+    console.log('MongoDB connected');
+    const port = process.env.PORT || 3001;
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+  })
+  .catch(err => {
+    console.error('Mongo connection error:', err);
+    process.exit(1);
+  });
