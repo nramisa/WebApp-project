@@ -36,7 +36,6 @@ Metrics: ${metricSummary}.
     const scoreMatch = text.match(/(\d{1,3})/);
     const score = scoreMatch ? Math.min(100,parseInt(scoreMatch[1])) : 50;
 
-    // split advice (strip score line)
     const advice = text.replace(/^.*\n/, '').trim();
 
     const session = await MarketSession.create({
