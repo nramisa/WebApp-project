@@ -14,7 +14,6 @@ const marketRoutes      = require('./routes/marketValidation');
 const adminRoutes       = require('./routes/admin');
 const userRoutes        = require('./routes/user');
 const investorMatchRoutes = require('./routes/investor');
-const creditsRouter     = require('./routes/credits');
 
 const app = express();
 
@@ -31,9 +30,6 @@ app.get('/api/health', (req, res) => {
 // public/auth
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/verify', verifyRoutes);
-
-// credits endpoint (protected by auth inside creditsRouter)
-app.use('/api/credits', creditsRouter);
 
 // protected/user-profile
 app.use('/api/user', userRoutes);
