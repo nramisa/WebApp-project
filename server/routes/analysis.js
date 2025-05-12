@@ -1,5 +1,3 @@
-// server/routes/analysis.js
-
 const express       = require('express');
 const multer        = require('multer');
 const fs            = require('fs');
@@ -14,7 +12,7 @@ const AnalysisMdl = require('../models/Analysis');
 
 const router = express.Router();
 
-// ↪️ Accept up to 4 files, each ≤25 MB, under the field name “files”
+// Accept up to 4 files, each ≤25 MB, under the field name “files”
 const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -106,12 +104,12 @@ router.post(
         let completion;
         try {
           completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-3.5-turbo-0613',
             messages: [
               { role: 'system', content: 'You are an expert presentation analyst.' },
               { role: 'user', content: `Analyze this presentation:\n\n${text}` }
             ],
-            max_tokens: 500,
+            max_tokens: 350,
           });
         } catch (apiErr) {
           // handle insufficient credits
