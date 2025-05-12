@@ -14,6 +14,7 @@ const marketRoutes   = require('./routes/marketValidation');
 const adminRoutes    = require('./routes/admin');
 const userRoutes     = require('./routes/user'); 
 const investorMatchRoutes = require('./routes/investor');
+const creditsRouter = require('./routes/credits');
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Dat
 // Public & auth
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/verify', verifyRoutes);
+app.use('/api/credits', creditsRouter);
 // Protected / user profile
 app.use('/api/user', userRoutes);
 // Your existing protected routes
