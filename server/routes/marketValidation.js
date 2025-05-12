@@ -28,9 +28,9 @@ Metrics: ${metricSummary}.
 `;
   try {
     const comp = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 500,
+      max_tokens: 200,
     });
     const text = comp.choices?.[0]?.message?.content || '';
     const scoreMatch = text.match(/(\d{1,3})/);
