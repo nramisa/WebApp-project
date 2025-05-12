@@ -7,6 +7,7 @@ import axios from 'axios';
 import EditProfileForm from './EditProfileForm';
 import styles from '../styles/dashboardStyles.module.css';
 
+// API client with JWT interceptor
 const API = axios.create({ baseURL: process.env.REACT_APP_API_URL });
 API.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token');
@@ -14,17 +15,20 @@ API.interceptors.request.use(cfg => {
   return cfg;
 });
 
+// Helper to compute a simple pitch score
 function computePitchScore({ structure, marketFit, readiness }) {
   let count = ((structure?1:0) + (marketFit?1:0) + (readiness?1:0));
   return Math.round((count / 3) * 100);
 }
 
 export default function Dashboard() {
+  // User profile
   const [user, setUser] = useState(null);
-
+  // Histories for each feature
   const [pitchHistory,  setPitchHistory]  = useState([]);
   const [qaHistory,     setQaHistory]     = useState([]);
   const [marketHistory, setMarketHistory] = useState([]);
+  // Loading & error states
   const [loading, setLoading] = useState({
     profile: false,
     pitch: true,
@@ -37,12 +41,13 @@ export default function Dashboard() {
     qa: '',
     market: ''
   });
-
+  // UI state
   const [activeTab, setActiveTab] = useState('pitch');
   const [editing,   setEditing]   = useState(false);
   const [detail,    setDetail]    = useState({ show: false, type: '', data: null });
 
   useEffect(() => {
+    // Load user from localStorage
     const u = JSON.parse(localStorage.getItem('user'));
     if (!u) return;
     setUser(u);
@@ -66,6 +71,7 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Handler to save profile edits
   const handleSave = async updates => {
     setLoading(l => ({ ...l, profile: true }));
     try {
@@ -80,11 +86,12 @@ export default function Dashboard() {
     }
   };
 
+  // Show spinner while loading profile
   if (!user) {
     return <div className="text-center py-5"><Spinner animation="border" /></div>;
   }
 
-  // Admin / Investor only see profile:
+  // Admin / Investor only see profile editing:
   if (user.isAdmin || user.isInvestor) {
     const title = user.isAdmin ? 'Admin Profile' : 'Investor Profile';
     return (
@@ -217,7 +224,7 @@ export default function Dashboard() {
                   }
                 </Tab>
 
-                {/* Q&A */}
+                {/* Investor Q&A */}
                 <Tab
                   eventKey="qa"
                   title={<span>Q&A <Badge bg="danger">{qaHistory.length}</Badge></span>}
