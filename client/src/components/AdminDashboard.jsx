@@ -5,6 +5,7 @@ import {
 import axios from 'axios';
 import styles from '../styles/dashboardStyles.module.css';
 
+// API client with JWT interceptor
 const api = axios.create({ baseURL: process.env.REACT_APP_API_URL });
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token');
