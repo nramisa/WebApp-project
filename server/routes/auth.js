@@ -9,9 +9,8 @@ const router = express.Router();
 const rawExpiry = process.env.JWT_EXPIRES_IN || '7d';
 
 const expiresIn = isNaN(Number(rawExpiry)) ? rawExpiry : Number(rawExpiry);
-// Email validation via MailboxLayer
-// Email validation via MailboxLayer
 
+// Email validation via MailboxLayer
 async function isEmailValid(email) {
 
   const apiKey = process.env.MAILBOXLAYER_API_KEY;
