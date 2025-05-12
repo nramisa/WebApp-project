@@ -19,13 +19,13 @@ router.post('/', auth, async (req, res) => {
 
   const prompt = `
 You are an expert investor. 
-Generate 10 concise questions that a ${investorType} investor would ask a startup in the ${domain} domain at the ${fundingStage} stage.
+Generate 5 concise questions that a ${investorType} investor would ask a startup in the ${domain} domain at the ${fundingStage} stage.
 `;
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 250,
+      max_tokens: 200,
     });
     const raw = completion.choices?.[0]?.message?.content || '';
     const questions = raw.split('\n').map(l => l.trim()).filter(l => l);
