@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const cors     = require('cors');
 const helmet = require('helmet');
 
-
 const authRoutes     = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
 const modelsRoutes   = require('./routes/models');
