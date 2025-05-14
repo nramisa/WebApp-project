@@ -10,7 +10,7 @@ const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-// 1) Generate 10 questions
+// 1) Generate 5 questions
 router.post('/', auth, async (req, res) => {
   const { investorType, fundingStage, domain } = req.body;
   if (!investorType || !fundingStage || !domain) {
@@ -21,12 +21,14 @@ router.post('/', auth, async (req, res) => {
 You are an expert investor. 
 Generate 5 concise questions that a ${investorType} investor would ask a startup in the ${domain} domain at the ${fundingStage} stage.
 `;
+
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 200,
     });
+
     const raw = completion.choices?.[0]?.message?.content || '';
     const questions = raw.split('\n').map(l => l.trim()).filter(l => l);
 
@@ -37,6 +39,7 @@ Generate 5 concise questions that a ${investorType} investor would ask a startup
       domain,
       questions,
     });
+
     res.json({ sessionId: session._id, questions });
   } catch (err) {
     console.error(err);
@@ -44,10 +47,11 @@ Generate 5 concise questions that a ${investorType} investor would ask a startup
   }
 });
 
-// 2) Submit answer to one question and get AI feedback
+// 2) Submit answer to a question
 router.post('/:sessionId/answer', auth, async (req, res) => {
   const { sessionId } = req.params;
   const { questionIndex, userAnswer } = req.body;
+
   if (typeof questionIndex !== 'number' || !userAnswer) {
     return res.status(400).json({ error: 'questionIndex and userAnswer required.' });
   }
@@ -57,6 +61,7 @@ router.post('/:sessionId/answer', auth, async (req, res) => {
     if (!session || session.user.toString() !== req.userId) {
       return res.status(404).json({ error: 'Session not found.' });
     }
+
     const question = session.questions[questionIndex];
     if (!question) {
       return res.status(400).json({ error: 'Invalid questionIndex.' });
@@ -71,14 +76,15 @@ Here is the user’s answer:
 
 Provide concise, constructive feedback on their answer and suggest improvements.
 `;
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo-0613',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 200,
     });
+
     const aiFeedback = completion.choices?.[0]?.message?.content || 'No feedback returned.';
 
-    // save it
     session.answers.push({ question, userAnswer, aiFeedback });
     await session.save();
 
@@ -89,12 +95,17 @@ Provide concise, constructive feedback on their answer and suggest improvements.
   }
 });
 
-// 3) History
+// 3) History with full answers
 router.get('/history', auth, async (req, res) => {
-  const history = await InvestorSession.find({ user: req.userId })
-    .sort({ createdAt: -1 });
-  res.json(history);
+  try {
+    const history = await InvestorSession.find({ user: req.userId })
+      .sort({ createdAt: -1 })
+      .lean(); // <-- Optional: improves speed, ensures full data
+    res.json(history);
+  } catch (err) {
+    console.error('Investor history error:', err);
+    res.status(500).json({ error: 'Failed to load history.' });
+  }
 });
 
 module.exports = router;
-
