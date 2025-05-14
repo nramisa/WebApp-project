@@ -2,14 +2,13 @@ import React from 'react';
 import styles from '../styles/Analysis.module.css';
 
 export default function Analysis({ data }) {
-  // nothing to show until we've got results
-  if (!data || !Array.isArray(data.results)) return null;
+  // Fix: directly expect an array, not data.results
+  if (!Array.isArray(data)) return null;
 
   return (
     <div>
-      {data.results.map(({ file, error, analysis }) => {
+      {data.map(({ file, error, analysis }) => {
         if (error) {
-          // if extraction / API errored
           return (
             <div key={file} className="mb-4">
               <h4>{file}</h4>
@@ -18,16 +17,12 @@ export default function Analysis({ data }) {
           );
         }
 
-        // grab the three feedback pieces
         const { structure, marketFit, readiness } = analysis.feedback;
-
-        // compute a simple “readiness” score if you like
         const filled = [structure, marketFit, readiness].filter(x => !!x).length;
         const score = Math.round((filled / 3) * 100);
 
         return (
           <div key={analysis._id} className={styles.resultsCard}>
-            {/* Header with overall readiness score */}
             <div className={styles.resultsHeader}>
               <h2>Analysis Results: {file}</h2>
               <div className={styles.confidenceMeter}>
@@ -36,7 +31,6 @@ export default function Analysis({ data }) {
               </div>
             </div>
 
-            {/* The three feedback sections */}
             <div className={styles.analysisResults}>
               <section>
                 <h3>Structure Analysis</h3>
